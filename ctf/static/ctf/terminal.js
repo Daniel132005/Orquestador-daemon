@@ -68,6 +68,38 @@ const fitAddon = new FitAddon.FitAddon();
 term.loadAddon(fitAddon);
 term.open(el.terminal);
 
+/*
+ * Ctrl+V y Ctrl+Shift+V pegan, como espera cualquiera en un navegador.
+ *
+ * Hay que interceptarlos a mano porque en una terminal Ctrl+V significa
+ * otra cosa: es `quoted-insert` de readline, "insertá el siguiente
+ * carácter sin interpretarlo". Sin esta intercepción se comía el marcador
+ * de inicio del pegado y el texto aparecía literal, con un `^[[200~`
+ * delante.
+ *
+ * `term.paste()` respeta el modo bracketed paste, así que lo pegado queda
+ * esperando a que la persona pulse Enter en lugar de ejecutarse solo.
+ */
+term.attachCustomKeyEventHandler((evento) => {
+  const esPegar =
+    evento.type === "keydown" &&
+    (evento.ctrlKey || evento.metaKey) &&
+    evento.key.toLowerCase() === "v";
+
+  if (!esPegar) return true;
+
+  navigator.clipboard
+    .readText()
+    .then((texto) => {
+      if (texto) term.paste(texto);
+    })
+    .catch(() => {
+      setStatus("El navegador bloqueó el acceso al portapapeles", "warn");
+    });
+
+  return false; // no reenviar la tecla al shell
+});
+
 function getCookie(name) {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;

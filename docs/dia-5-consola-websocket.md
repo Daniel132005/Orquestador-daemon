@@ -340,6 +340,42 @@ o secuencias de escape que manipulen la terminal, hay técnicas más elaboradas
 que siguen siendo posibles. `bracketed paste` eleva bastante el listón, no lo
 vuelve imposible.
 
+### 5.7 Ctrl+V tuvo que implementarse a mano
+
+Al probarlo en el navegador apareció que **Ctrl+V no pegaba nada**. La primera
+pista fue lo que quedaba escrito en la terminal:
+
+```console
+0cca2adfba00:/# ^[[200~echo hola~
+```
+
+Los marcadores de bracketed paste aparecían como texto literal. La causa no es
+un fallo: **en una terminal, Ctrl+V significa otra cosa**. Es `quoted-insert`
+de readline, "insertá el siguiente carácter sin interpretarlo", así que se
+comía el marcador de apertura del pegado.
+
+O sea que el comportamiento era correcto para una terminal, pero no el que
+espera quien usa un navegador. Se interceptan Ctrl+V y Ctrl+Shift+V en el
+frontend y se resuelven con `term.paste()`, que respeta el modo bracketed
+paste:
+
+```js
+term.attachCustomKeyEventHandler((evento) => {
+  const esPegar = evento.type === "keydown" &&
+    (evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === "v";
+  if (!esPegar) return true;
+  navigator.clipboard.readText().then((t) => t && term.paste(t));
+  return false;   // no reenviar la tecla al shell
+});
+```
+
+**Costo asumido:** se pierde `quoted-insert`, que en una terminal sirve para
+escribir caracteres de control a mano. Para una consola en el navegador, poder
+pegar vale bastante más que esa función.
+
+Verificado: el texto aparece limpio, sin marcadores, y un pegado de varias
+líneas sigue esperando a que la persona pulse Enter.
+
 ### 5.4 Fuga de procesos al reconectar — **bug encontrado y corregido**
 
 Esta prueba sí encontró un problema serio. Veinticinco ciclos de conectar y
