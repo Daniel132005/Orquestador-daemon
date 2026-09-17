@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
-from . import docker_client
+from . import challenges, docker_client
 from .models import Instance
 
 
@@ -19,6 +20,27 @@ def terminal_page(request):
 
 @login_required
 @require_GET
+def challenge_list(request):
+    """Catálogo de retos que el frontend ofrece para elegir antes de desplegar."""
+    return JsonResponse(
+        {
+            "challenges": [
+                {
+                    "slug": c["slug"],
+                    "name": c["name"],
+                    "owasp": c["owasp"],
+                    "difficulty": c["difficulty"],
+                    "description": c["description"],
+                }
+                for c in challenges.list_challenges()
+            ],
+            "default": challenges.DEFAULT_CHALLENGE,
+        }
+    )
+
+
+@login_required
+@require_GET
 def instance_status(request):
     """
     Estado de la instancia del usuario más los límites configurados, para
@@ -26,11 +48,23 @@ def instance_status(request):
     "iniciar" cuando ya hay una instancia viva).
     """
     instance = Instance.objects.filter(user=request.user).first()
+    reto = challenges.get_challenge(instance.challenge) if instance else None
     payload = {
         "active": instance is not None,
         "container_id": instance.container_id if instance else None,
         "network_name": instance.network_name if instance else None,
         "created_at": instance.created_at.isoformat() if instance else None,
+        "challenge": (
+            {
+                "slug": instance.challenge,
+                "name": reto["name"] if reto else instance.challenge,
+                "owasp": reto["owasp"] if reto else None,
+                "difficulty": reto["difficulty"] if reto else None,
+                "description": reto["description"] if reto else None,
+            }
+            if instance
+            else None
+        ),
         "limits": {
             "memory_mb": settings.CTF_MEMORY_LIMIT_BYTES // (1024 * 1024),
             "cpus": settings.CTF_NANO_CPUS / 1_000_000_000,
@@ -62,13 +96,23 @@ def start_instance(request):
     if Instance.objects.filter(user=request.user).exists():
         return JsonResponse({"error": "Ya tienes una instancia activa"}, status=409)
 
+    try:
+        body = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Cuerpo de la petición inválido"}, status=400)
+
+    challenge_slug = body.get("challenge") or challenges.DEFAULT_CHALLENGE
+    reto = challenges.get_challenge(challenge_slug)
+    if reto is None:
+        return JsonResponse({"error": f"Reto desconocido: {challenge_slug}"}, status=400)
+
     network_name = f"ctf-net-{request.user.pk}-{uuid.uuid4().hex[:8]}"
     network_id = docker_client.create_network(network_name)
 
     container_id = None
     try:
         container_id = docker_client.create_container(
-            image=settings.CTF_CHALLENGE_IMAGE,
+            image=reto["image"],
             network_name=network_name,
             mem_limit_bytes=settings.CTF_MEMORY_LIMIT_BYTES,
             nano_cpus=settings.CTF_NANO_CPUS,
@@ -88,6 +132,7 @@ def start_instance(request):
     try:
         instance = Instance.objects.create(
             user=request.user,
+            challenge=challenge_slug,
             container_id=container_id,
             network_id=network_id,
             network_name=network_name,

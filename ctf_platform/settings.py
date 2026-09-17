@@ -106,8 +106,8 @@ CTF_PLATFORM_VERSION = "v0.1.0"
 # Ruta al socket Unix del daemon de Docker (ver docker_client.py).
 DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
 
-# Imagen usada para el reto de seguridad que se levanta por usuario.
-CTF_CHALLENGE_IMAGE = os.environ.get("CTF_CHALLENGE_IMAGE", "ctf-challenge:latest")
+# La imagen a levantar ya no es fija: la elige el estudiante entre el
+# catálogo de `ctf/challenges.py`, y cada entrada trae su propia imagen.
 
 # Shell que abre la consola. Vacío = detección automática: usa `bash` si la
 # imagen lo trae (activa `bracketed paste`, que impide que un texto pegado se

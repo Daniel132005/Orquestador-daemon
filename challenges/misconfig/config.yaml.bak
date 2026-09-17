@@ -1,0 +1,4 @@
+# Respaldo de configuración -- generado antes del último despliegue.
+# TODO: borrar este archivo del contenedor final (nunca se hizo).
+admin_user: admin
+admin_pass: SuperClaveTemporal2024

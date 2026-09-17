@@ -548,12 +548,18 @@ body {
   flex: 1;
   min-height: 0;
   background: #050807;
+  /* El padding vive acá, no en #terminal: fitAddon mide el clientHeight
+     de #terminal para calcular cuántas filas entran, y no descuenta su
+     propio padding -- con el padding puesto ahí, calculaba una fila de
+     más que nunca tenía espacio real, y la última línea quedaba cortada
+     sin importar el scroll. Con `inset: 0` contra el borde interno del
+     padding de este contenedor, el espacio visual queda igual. */
+  padding: 10px 12px;
 }
 
 #terminal {
   position: absolute;
   inset: 0;
-  padding: 10px 12px;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -566,11 +572,12 @@ body {
   position: absolute;
   inset: 0;
   display: grid;
-  place-content: center;
+  align-content: safe center;
   justify-items: center;
   gap: 8px;
   padding: 24px;
   text-align: center;
+  overflow-y: auto;
 }
 
 .terminal-empty[hidden] {
@@ -592,13 +599,187 @@ body {
   color: var(--muted-dim);
 }
 
-.xterm .xterm-viewport::-webkit-scrollbar {
+.difficulty-filter {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.difficulty-filter-btn {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.difficulty-filter-btn:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.difficulty-filter-btn.is-active {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.challenge-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 10px;
+  width: min(820px, 92vw);
+  margin-top: 6px;
+}
+
+@media (max-width: 620px) {
+  .challenge-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
+.challenge-picker-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 20px 0;
+  font-size: 11px;
+  color: var(--muted-dim);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.challenge-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.challenge-card:hover {
+  border-color: var(--border);
+}
+
+.challenge-card.is-selected {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+
+.challenge-card input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--green);
+}
+
+.challenge-card-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.challenge-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.challenge-card-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.challenge-card-owasp {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+}
+
+.difficulty-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.difficulty-tag.is-basico {
+  color: var(--green);
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+
+.difficulty-tag.is-intermedio {
+  color: var(--amber);
+  border-color: var(--amber-soft);
+  background: var(--amber-soft);
+}
+
+.difficulty-tag.is-dificil {
+  color: var(--danger);
+  border-color: var(--danger-soft);
+  background: var(--danger-soft);
+}
+
+.challenge-card-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Scroll nativo (sin JS, sin barra propia) pero coherente con el tema
+   oscuro en vez del gris por defecto del sistema operativo. Se aplica a
+   los tres paneles que scrollean: la terminal, el selector de retos y
+   el panel lateral. */
+.xterm .xterm-viewport,
+.terminal-empty,
+.side {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--panel-2);
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar,
+.terminal-empty::-webkit-scrollbar,
+.side::-webkit-scrollbar {
   width: 10px;
 }
 
-.xterm .xterm-viewport::-webkit-scrollbar-thumb {
-  background: #1f2d28;
+.xterm .xterm-viewport::-webkit-scrollbar-track,
+.terminal-empty::-webkit-scrollbar-track,
+.side::-webkit-scrollbar-track {
+  background: var(--panel-2);
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb,
+.terminal-empty::-webkit-scrollbar-thumb,
+.side::-webkit-scrollbar-thumb {
+  background: var(--border);
   border-radius: 10px;
+  border: 2px solid var(--panel-2);
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover,
+.terminal-empty::-webkit-scrollbar-thumb:hover,
+.side::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-dim);
 }
 
 /* ---------- Panel lateral ---------- */

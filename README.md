@@ -16,6 +16,8 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 5 — Consola interactiva (WebSocket + Xterm.js)](docs/dia-5-consola-websocket.md)
 - [Día 6 — Pruebas de integración y de fuga](docs/dia-6-integracion-y-fuga.md)
 - [Día 7 — Vida máxima absoluta y pulido de interfaz](docs/dia-7-vida-maxima-y-demo.md)
+- [Día 8 — Retos OWASP seleccionables](docs/dia-8-retos-owasp.md)
+- [Día 9 — Los diez retos OWASP, por dificultad](docs/dia-9-owasp-top-10-completo.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 
@@ -127,17 +129,32 @@ mkdir -p ~/ctf-data
 ~/.venvs/ctf-platform/bin/python manage.py createsuperuser
 ```
 
-### 7. Construir la imagen del reto
+### 7. Construir las imágenes de los retos
+
+El catálogo de retos vive en [`ctf/challenges.py`](ctf/challenges.py); cada
+entrada es una imagen propia bajo `challenges/`, todas construidas sobre una
+base común (`ctf-base`). Construir la base primero, y después las diez:
 
 ```bash
-docker build -t ctf-challenge:latest challenge/
+docker build -t ctf-base:latest challenges/_base/
+
+for reto in injection-sqli idor crypto-debil misconfig diseno-inseguro \
+            componente-vulnerable auth-fallas logging-fallas \
+            integridad-datos ssrf; do
+  docker build -t "ctf-reto-$reto:latest" "challenges/$reto/"
+done
 ```
 
-Es Alpine con `bash` añadido (16 MB). El `bash` no es capricho: es lo que
-activa `bracketed paste`, la protección que impide que un texto pegado en la
-consola se ejecute solo línea por línea. La consola detecta si la imagen lo
-trae y lo usa automáticamente; con una imagen sin `bash` funciona igual, con
-`sh`.
+Todas son Alpine con `bash`, `python3` y `sudo` añadidos. El `bash` no es
+capricho: es lo que activa `bracketed paste`, la protección que impide que
+un texto pegado en la consola se ejecute solo línea por línea. La consola
+detecta si la imagen lo trae y lo usa automáticamente; con una imagen sin
+`bash` funciona igual, con `sh`.
+
+Ver [Día 8](docs/dia-8-retos-owasp.md) y
+[Día 9 — Los diez retos OWASP, por dificultad](docs/dia-9-owasp-top-10-completo.md)
+para el detalle de cada reto, su categoría OWASP, su dificultad y cómo se
+resuelve.
 
 ---
 
@@ -160,7 +177,6 @@ defecto.
 
 ```bash
 CTF_DB_PATH=$HOME/ctf-data/db.sqlite3 \
-CTF_CHALLENGE_IMAGE=alpine:latest \
 ~/.venvs/ctf-platform/bin/daphne -b 0.0.0.0 -p 8000 ctf_platform.asgi:application
 ```
 
@@ -199,7 +215,6 @@ Detalles y límites conocidos en el
 | Variable | Por defecto | Para qué sirve |
 |---|---|---|
 | `CTF_DB_PATH` | `db.sqlite3` del proyecto | Ruta del archivo SQLite. **En WSL, obligatoria** (fuera de `/mnt/c`) |
-| `CTF_CHALLENGE_IMAGE` | `ctf-challenge:latest` | Imagen que se levanta por estudiante |
 | `CTF_CONSOLE_SHELL` | (automático) | Shell de la consola. Vacío = usa `bash` si la imagen lo trae, `sh` si no. Solo para forzar uno concreto |
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Socket del daemon |
 | `CTF_MEMORY_LIMIT_MB` | `256` | Límite de memoria por contenedor |

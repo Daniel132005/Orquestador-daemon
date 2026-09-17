@@ -14,6 +14,7 @@ const API = {
   status: "/api/instance/status/",
   start: "/api/instance/start/",
   stop: "/api/instance/stop/",
+  challenges: "/api/challenges/",
 };
 
 const el = {
@@ -36,9 +37,16 @@ const el = {
   pids: document.getElementById("info-pids"),
   timeout: document.getElementById("info-timeout"),
   maxLifetime: document.getElementById("info-max-lifetime"),
+  challenge: document.getElementById("info-challenge"),
+  challengeHint: document.getElementById("info-challenge-hint"),
+  picker: document.getElementById("challenge-picker"),
+  pickerNote: document.getElementById("challenge-picker-note"),
 };
 
 let socket = null;
+let selectedChallenge = null;
+let todosLosRetos = [];
+let filtroDificultad = "todos";
 // Distingue un cierre pedido por el usuario (al destruir) de una caída,
 // para que el mensaje final no lo pise el handler de `onclose`.
 let closingOnPurpose = false;
@@ -106,17 +114,21 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-async function callApi(path, method = "POST") {
+async function callApi(path, method = "POST", body = null) {
   const options = { method };
   if (method === "POST") {
     options.headers = { "X-CSRFToken": getCookie("csrftoken") };
+    if (body !== null) {
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(body);
+    }
   }
   const response = await fetch(path, options);
-  const body = await response.json().catch(() => ({}));
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body.error || `Error ${response.status}`);
+    throw new Error(payload.error || `Error ${response.status}`);
   }
-  return body;
+  return payload;
 }
 
 function setStatus(text, variant) {
@@ -172,6 +184,88 @@ function renderInfo(status) {
   el.pids.textContent = status.limits.pids;
   el.timeout.textContent = formatTimeout(status.inactivity_timeout_seconds);
   el.maxLifetime.textContent = formatTimeout(status.max_lifetime_seconds);
+
+  if (status.challenge) {
+    const dificultad = NOMBRE_DIFICULTAD[status.challenge.difficulty] || status.challenge.difficulty;
+    el.challenge.textContent = `${status.challenge.name} (${status.challenge.owasp}) — ${dificultad}`;
+    el.challengeHint.textContent = status.challenge.description || "";
+  } else {
+    el.challenge.textContent = "—";
+    el.challengeHint.textContent = "";
+  }
+}
+
+const NOMBRE_DIFICULTAD = {
+  basico: "Básico",
+  intermedio: "Intermedio",
+  dificil: "Difícil",
+};
+
+function renderChallengePicker(disponibles) {
+  el.picker.innerHTML = "";
+  if (disponibles.length === 0) {
+    el.picker.innerHTML = '<p class="challenge-picker-empty">Sin retos en esta dificultad.</p>';
+    return;
+  }
+  disponibles.forEach((reto) => {
+    const label = document.createElement("label");
+    label.className = "challenge-card";
+    label.dataset.slug = reto.slug;
+
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "challenge";
+    input.value = reto.slug;
+    input.checked = reto.slug === selectedChallenge;
+
+    const body = document.createElement("div");
+    body.className = "challenge-card-body";
+    body.innerHTML = `
+      <div class="challenge-card-head">
+        <span class="challenge-card-name">${reto.name}</span>
+        <span class="challenge-card-owasp">${reto.owasp}</span>
+        <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
+      </div>
+      <p class="challenge-card-desc">${reto.description}</p>
+    `;
+
+    label.appendChild(input);
+    label.appendChild(body);
+    label.classList.toggle("is-selected", input.checked);
+
+    input.addEventListener("change", () => {
+      selectedChallenge = reto.slug;
+      el.picker
+        .querySelectorAll(".challenge-card")
+        .forEach((card) => card.classList.toggle("is-selected", card.dataset.slug === selectedChallenge));
+    });
+
+    el.picker.appendChild(label);
+  });
+}
+
+function retosFiltrados() {
+  if (filtroDificultad === "todos") return todosLosRetos;
+  return todosLosRetos.filter((reto) => reto.difficulty === filtroDificultad);
+}
+
+function aplicarFiltro(dificultad) {
+  filtroDificultad = dificultad;
+  document.querySelectorAll(".difficulty-filter-btn").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.difficulty === dificultad);
+  });
+  renderChallengePicker(retosFiltrados());
+}
+
+document.querySelectorAll(".difficulty-filter-btn").forEach((btn) => {
+  btn.addEventListener("click", () => aplicarFiltro(btn.dataset.difficulty));
+});
+
+async function cargarRetos() {
+  const data = await callApi(API.challenges, "GET");
+  selectedChallenge = selectedChallenge || data.default;
+  todosLosRetos = data.challenges;
+  renderChallengePicker(retosFiltrados());
 }
 
 function showTerminal(visible) {
@@ -261,10 +355,14 @@ window.addEventListener("resize", () => {
 });
 
 el.start.addEventListener("click", async () => {
+  if (!selectedChallenge) {
+    setStatus("Elegí un reto antes de desplegar", "warn");
+    return;
+  }
   el.start.disabled = true;
   setStatus("Creando contenedor", "warn");
   try {
-    await callApi(API.start);
+    await callApi(API.start, "POST", { challenge: selectedChallenge });
     await refresh();
     connectWebSocket();
   } catch (err) {
@@ -310,6 +408,11 @@ async function refresh() {
 (async function init() {
   renderProtocol();
   renderSessionInfo();
+  try {
+    await cargarRetos();
+  } catch {
+    el.pickerNote.textContent = "No se pudo cargar el catálogo de retos.";
+  }
   try {
     const status = await refresh();
     if (status.active) {

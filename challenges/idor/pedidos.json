@@ -1,0 +1,17 @@
+{
+  "1001": {
+    "cliente": "invitado",
+    "producto": "Sticker ROOT_LABS",
+    "nota": "Tu pedido."
+  },
+  "1002": {
+    "cliente": "invitado",
+    "producto": "Taza CTF",
+    "nota": "Tu pedido."
+  },
+  "1337": {
+    "cliente": "admin",
+    "producto": "Acceso VIP",
+    "flag": "FLAG{idor_nunca_confies_en_el_id_del_cliente}"
+  }
+}

@@ -91,6 +91,18 @@ def create_container(
             "NanoCpus": nano_cpus,
             "PidsLimit": pids_limit,
             "CapDrop": ["ALL"],
+            # Los retos usan `sudo` para separar privilegios dentro del
+            # contenedor (ver challenges/_base/Dockerfile): la consola
+            # corre sin privilegios, y solo el comando exacto de la app
+            # vulnerable puede correr como root. Con `CapDrop: ALL` a
+            # secas, el kernel le recorta el "bounding set" a CUALQUIER
+            # proceso del contenedor, así que ni siquiera un binario
+            # setuid-root como `sudo` puede terminar de cambiar de
+            # usuario (falla con "unable to change to root gid").
+            # Se agregan de vuelta solo las dos que sudo necesita para
+            # eso, nada más — sigue sin poder tocar la red (NET_RAW/ADMIN)
+            # ni el resto de lo que el Día 3 verificó que no hacía falta.
+            "CapAdd": ["SETUID", "SETGID"],
             "ReadonlyRootfs": True,
             "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
             "AutoRemove": False,

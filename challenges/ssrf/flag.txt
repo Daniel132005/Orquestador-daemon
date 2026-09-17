@@ -1,0 +1,1 @@
+FLAG{una_lista_negra_sensible_a_mayusculas_no_bloquea_nada}

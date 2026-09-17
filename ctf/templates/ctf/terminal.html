@@ -58,7 +58,14 @@
         <div id="terminal"></div>
         <div class="terminal-empty" id="terminal-empty">
           <p>Sin instancia activa</p>
-          <p class="muted">Desplegá una para abrir la consola del reto.</p>
+          <p class="muted" id="challenge-picker-note">Elegí un reto y desplegalo para abrir la consola.</p>
+          <div class="difficulty-filter" id="difficulty-filter" role="group" aria-label="Filtrar por dificultad">
+            <button type="button" class="difficulty-filter-btn is-active" data-difficulty="todos">Todos</button>
+            <button type="button" class="difficulty-filter-btn" data-difficulty="basico">Básico</button>
+            <button type="button" class="difficulty-filter-btn" data-difficulty="intermedio">Intermedio</button>
+            <button type="button" class="difficulty-filter-btn" data-difficulty="dificil">Difícil</button>
+          </div>
+          <div class="challenge-picker" id="challenge-picker"></div>
         </div>
       </div>
     </section>
@@ -68,10 +75,12 @@
         <h2 class="side-title">Instancia</h2>
         <dl>
           <div class="kv"><dt>Estado</dt><dd id="info-state">—</dd></div>
+          <div class="kv"><dt>Reto</dt><dd id="info-challenge">—</dd></div>
           <div class="kv"><dt>Contenedor</dt><dd id="info-container">—</dd></div>
           <div class="kv"><dt>Red</dt><dd id="info-network">—</dd></div>
           <div class="kv"><dt>Creada</dt><dd id="info-created">—</dd></div>
         </dl>
+        <p class="side-note" id="info-challenge-hint"></p>
       </div>
 
       <div class="side-section">

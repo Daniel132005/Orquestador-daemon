@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from .challenges import DEFAULT_CHALLENGE
+
 
 class Instance(models.Model):
     """
@@ -14,6 +16,7 @@ class Instance(models.Model):
         on_delete=models.CASCADE,
         related_name="ctf_instance",
     )
+    challenge = models.CharField(max_length=64, default=DEFAULT_CHALLENGE)
     container_id = models.CharField(max_length=64)
     network_id = models.CharField(max_length=64)
     network_name = models.CharField(max_length=128)
