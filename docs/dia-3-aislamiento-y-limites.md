@@ -376,6 +376,7 @@ Lo que funciona y quedó probado activamente:
 - Límites de memoria, CPU y procesos, aplicados por cgroups y verificados
   bajo ataque real.
 - El socket de Docker no está expuesto dentro de los contenedores.
+- Capacidades del kernel en cero (`CapDrop: ["ALL"]`), sin costo funcional.
 
 Lo que queda pendiente de atender:
 
