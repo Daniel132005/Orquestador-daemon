@@ -37,6 +37,7 @@ def instance_status(request):
             "pids": settings.CTF_PIDS_LIMIT,
         },
         "inactivity_timeout_seconds": settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS,
+        "max_lifetime_seconds": settings.INSTANCE_MAX_LIFETIME_SECONDS,
     }
     return JsonResponse(payload)
 

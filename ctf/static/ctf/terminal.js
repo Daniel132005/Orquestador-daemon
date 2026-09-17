@@ -35,6 +35,7 @@ const el = {
   cpu: document.getElementById("info-cpu"),
   pids: document.getElementById("info-pids"),
   timeout: document.getElementById("info-timeout"),
+  maxLifetime: document.getElementById("info-max-lifetime"),
 };
 
 let socket = null;
@@ -170,6 +171,7 @@ function renderInfo(status) {
   el.cpu.textContent = `${status.limits.cpus} núcleo${status.limits.cpus === 1 ? "" : "s"}`;
   el.pids.textContent = status.limits.pids;
   el.timeout.textContent = formatTimeout(status.inactivity_timeout_seconds);
+  el.maxLifetime.textContent = formatTimeout(status.max_lifetime_seconds);
 }
 
 function showTerminal(visible) {
@@ -274,13 +276,16 @@ el.start.addEventListener("click", async () => {
 el.stop.addEventListener("click", async () => {
   el.stop.disabled = true;
   setStatus("Destruyendo contenedor", "warn");
-  closingOnPurpose = true;
-  if (socket) {
-    socket.close();
-    socket = null;
-  }
   try {
     await callApi(API.stop);
+    // El socket se cierra recién acá, ya confirmado el éxito: si el
+    // servidor falla en destruir (ej. Docker no responde), la consola
+    // sigue funcionando en vez de quedar muerta sin reconexión.
+    closingOnPurpose = true;
+    if (socket) {
+      socket.close();
+      socket = null;
+    }
     term.reset();
     showTerminal(false);
     setStatus("Instancia destruida", null);

@@ -130,6 +130,14 @@ CTF_WATCHDOG_INTERVAL_SECONDS = int(
     os.environ.get("CTF_WATCHDOG_INTERVAL_SECONDS", "60")
 )
 
+# Vida máxima absoluta de una instancia, sin importar su actividad (ver
+# Día 6: un bucle que produce salida periódica mantiene `last_activity`
+# fresco para siempre y el umbral de inactividad solo, nunca la alcanza).
+# Este techo la destruye igual una vez cumplido, medido desde `created_at`.
+INSTANCE_MAX_LIFETIME_SECONDS = int(
+    os.environ.get("CTF_MAX_LIFETIME_SECONDS", str(2 * 60 * 60))
+)
+
 # El watchdog destruye contenedores sin intervención humana, así que tiene
 # que dejar rastro: sin esto sus mensajes se pierden y no hay forma de
 # saber si está funcionando ni qué destruyó.

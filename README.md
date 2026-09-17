@@ -14,6 +14,8 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 3 — Aislamiento de red y límites de recursos](docs/dia-3-aislamiento-y-limites.md)
 - [Día 4 — Destrucción automática por inactividad](docs/dia-4-destruccion-automatica.md)
 - [Día 5 — Consola interactiva (WebSocket + Xterm.js)](docs/dia-5-consola-websocket.md)
+- [Día 6 — Pruebas de integración y de fuga](docs/dia-6-integracion-y-fuga.md)
+- [Día 7 — Vida máxima absoluta y pulido de interfaz](docs/dia-7-vida-maxima-y-demo.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 
@@ -204,6 +206,7 @@ Detalles y límites conocidos en el
 | `CTF_NANO_CPUS` | `500000000` | CPU (500000000 = 0.5 núcleos) |
 | `CTF_PIDS_LIMIT` | `64` | Máximo de procesos por contenedor |
 | `CTF_INACTIVITY_TIMEOUT_SECONDS` | `900` | Inactividad antes de destruir (watchdog) |
+| `CTF_MAX_LIFETIME_SECONDS` | `7200` | Vida máxima absoluta, aunque haya actividad constante (ver [Día 7](docs/dia-7-vida-maxima-y-demo.md)) |
 | `CTF_WATCHDOG_INTERVAL_SECONDS` | `60` | Cada cuánto barre el watchdog |
 | `CTF_WATCHDOG_INTEGRADO` | (automático) | `0` desactiva el watchdog integrado; `1` lo fuerza |
 | `DJANGO_SECRET_KEY` | clave de desarrollo | **Cambiar en producción** |
