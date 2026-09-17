@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acceso — Plataforma CTF</title>
+  <link rel="stylesheet" href="{% static 'ctf/app.css' %}" />
+</head>
+<body class="auth-body">
+  <div class="shell"></div>
+
+  <div class="rail rail-top">
+    <span class="rail-item"><span class="rail-dot" id="link-dot"></span><span id="link-text">Comprobando enlace</span></span>
+    <span class="rail-item" id="latency">Latencia: —</span>
+  </div>
+
+  <main class="auth-card">
+    <div class="auth-mark">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.5 4.5 5.5v6c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10v-6L12 2.5Z" />
+        <path d="m9.5 10 2 2-2 2" />
+        <path d="M13 14h2" />
+      </svg>
+    </div>
+
+    <div class="auth-head">
+      <span class="chip" id="protocol-chip">Comprobando protocolo</span>
+      <h1 class="auth-title">ROOT_LABS<span class="sep">//</span>CTF PORTAL</h1>
+      <p class="auth-sub">Autenticación segura para entornos de laboratorio Docker</p>
+    </div>
+
+    <div class="meta-strip">
+      <span>Entorno: <strong>{{ entorno }}</strong></span>
+      <span class="meta-version">{{ version }}</span>
+    </div>
+
+    {% if form.errors %}
+      <div class="alert">Credenciales inválidas — AUTH_DENIED</div>
+    {% endif %}
+
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+
+      <div>
+        <div class="field-head">
+          <span class="field-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Identificador de estudiante
+          </span>
+          <span class="tag">Req:id</span>
+        </div>
+        <div class="input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.9 7.9" />
+          </svg>
+          <input type="text" name="username" autocomplete="username" placeholder="ej. s1048293" autofocus required />
+        </div>
+      </div>
+
+      <div>
+        <div class="field-head">
+          <span class="field-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              <rect x="4" y="11" width="16" height="10" rx="2" />
+            </svg>
+            Clave de acceso
+          </span>
+          <span class="tag">Hash:pbkdf2</span>
+        </div>
+        <div class="input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          <input type="password" name="password" id="password" autocomplete="current-password" placeholder="••••••••••••" required />
+          <button type="button" class="toggle-pw" id="toggle-pw" aria-label="Mostrar contraseña">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m6 9 3 3-3 3" />
+          <path d="M12 15h5" />
+        </svg>
+        Iniciar sesión // AUTH_EXEC
+      </button>
+    </form>
+
+    <div class="note-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 16v-4M12 8h.01" />
+      </svg>
+      <span>¿Problemas con tus credenciales? Contactá al administrador del laboratorio.</span>
+    </div>
+  </main>
+
+  <div class="rail rail-bottom">
+    <span class="rail-item"><span class="rail-dot is-ok"></span>Aislamiento: red interna + cgroups</span>
+    <span class="rail-item" id="syscheck">Sys_check: —</span>
+  </div>
+
+  <script src="{% static 'ctf/auth.js' %}"></script>
+</body>
+</html>

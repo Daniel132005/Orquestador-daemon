@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consola — Plataforma CTF</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <link rel="stylesheet" href="{% static 'ctf/app.css' %}" />
+</head>
+<body>
+  <div class="shell"></div>
+
+  <div class="rail rail-top">
+    <span class="rail-item"><span class="rail-dot" id="link-dot"></span><span id="link-text">Comprobando enlace</span></span>
+    <span class="rail-item" id="protocol-note">—</span>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="topbar-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.5 4.5 5.5v6c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10v-6L12 2.5Z" />
+          <path d="m9.5 10 2 2-2 2" />
+          <path d="M13 14h2" />
+        </svg>
+      </span>
+      <span class="topbar-name">ROOT_LABS<span class="sep">//</span>CTF</span>
+    </div>
+    <div class="topbar-right">
+      <span class="user-chip">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        {{ user.username }}
+      </span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost">Salir</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel terminal-panel">
+      <div class="panel-head">
+        <div class="status">
+          <span class="rail-dot" id="status-dot"></span>
+          <span id="status-text">Comprobando estado</span>
+        </div>
+        <div class="actions">
+          <button id="btn-start" class="btn btn-primary" disabled>Desplegar instancia</button>
+          <button id="btn-stop" class="btn btn-danger" disabled>Destruir</button>
+        </div>
+      </div>
+      <div class="terminal-wrap">
+        <div id="terminal"></div>
+        <div class="terminal-empty" id="terminal-empty">
+          <p>Sin instancia activa</p>
+          <p class="muted">Desplegá una para abrir la consola del reto.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel side">
+      <div class="side-section">
+        <h2 class="side-title">Instancia</h2>
+        <dl>
+          <div class="kv"><dt>Estado</dt><dd id="info-state">—</dd></div>
+          <div class="kv"><dt>Contenedor</dt><dd id="info-container">—</dd></div>
+          <div class="kv"><dt>Red</dt><dd id="info-network">—</dd></div>
+          <div class="kv"><dt>Creada</dt><dd id="info-created">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="side-section">
+        <h2 class="side-title">Límites de recursos</h2>
+        <dl>
+          <div class="kv"><dt>Memoria</dt><dd id="info-memory">—</dd></div>
+          <div class="kv"><dt>CPU</dt><dd id="info-cpu">—</dd></div>
+          <div class="kv"><dt>Procesos</dt><dd id="info-pids">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="side-section">
+        <h2 class="side-title">Aislamiento</h2>
+        <p class="side-note">
+          Red Docker propia marcada como <strong>interna</strong>: sin salida
+          a internet y sin visibilidad hacia los contenedores de otros
+          estudiantes.
+        </p>
+      </div>
+
+      <div class="side-section">
+        <h2 class="side-title">Destrucción automática</h2>
+        <p class="side-note">
+          Tras <strong id="info-timeout">—</strong> sin actividad en la
+          consola, el contenedor y su red se destruyen solos.
+        </p>
+      </div>
+    </aside>
+  </main>
+
+  <div class="rail rail-bottom">
+    <span class="rail-item"><span class="rail-dot is-ok"></span>Aislamiento: red interna + cgroups</span>
+    <span class="rail-item" id="session-info">—</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <script src="{% static 'ctf/terminal.js' %}"></script>
+</body>
+</html>
