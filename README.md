@@ -12,6 +12,8 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 1 — API de Docker sin SDK](docs/dia-1-api-docker-sin-sdk.md)
 - [Día 2 — Orquestador en Django](docs/dia-2-orquestador-django.md)
 - [Día 3 — Aislamiento de red y límites de recursos](docs/dia-3-aislamiento-y-limites.md)
+- [Día 4 — Destrucción automática por inactividad](docs/dia-4-destruccion-automatica.md)
+- [Día 5 — Consola interactiva (WebSocket + Xterm.js)](docs/dia-5-consola-websocket.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 
@@ -164,16 +166,25 @@ de Windows, no hace falta hacer nada extra).
 
 ### El watchdog (destrucción automática)
 
-Es un **proceso aparte**, en otra terminal. Si no lo ejecutás, las instancias
-abandonadas quedan corriendo para siempre:
+**Arranca solo junto al servidor**, no hace falta hacer nada. Cada 60 segundos
+busca instancias inactivas y destruye su contenedor y su red. Se lo ve en el
+log del servidor:
+
+```
+INFO ctf.apps: Watchdog integrado iniciado (umbral=900s, intervalo=60s)
+INFO ctf.watchdog: Destruyendo instancia de daniel (13462551c361), inactiva hace 903s
+```
+
+También se puede correr como proceso aparte (cron, systemd), o a mano para
+probarlo sin esperar:
 
 ```bash
 CTF_DB_PATH=$HOME/ctf-data/db.sqlite3 \
-~/.venvs/ctf-platform/bin/python manage.py watchdog
-
-# una sola pasada, para probar:
-... manage.py watchdog --once
+~/.venvs/ctf-platform/bin/python manage.py watchdog --once
 ```
+
+Detalles y límites conocidos en el
+[reporte del Día 4](docs/dia-4-destruccion-automatica.md).
 
 ---
 
@@ -188,6 +199,8 @@ CTF_DB_PATH=$HOME/ctf-data/db.sqlite3 \
 | `CTF_NANO_CPUS` | `500000000` | CPU (500000000 = 0.5 núcleos) |
 | `CTF_PIDS_LIMIT` | `64` | Máximo de procesos por contenedor |
 | `CTF_INACTIVITY_TIMEOUT_SECONDS` | `900` | Inactividad antes de destruir (watchdog) |
+| `CTF_WATCHDOG_INTERVAL_SECONDS` | `60` | Cada cuánto barre el watchdog |
+| `CTF_WATCHDOG_INTEGRADO` | (automático) | `0` desactiva el watchdog integrado; `1` lo fuerza |
 | `DJANGO_SECRET_KEY` | clave de desarrollo | **Cambiar en producción** |
 | `DJANGO_DEBUG` | `1` | Poner `0` en producción |
 

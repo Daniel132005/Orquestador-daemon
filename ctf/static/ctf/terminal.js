@@ -159,6 +159,35 @@ function sendResize() {
   }
 }
 
+async function resincronizar() {
+  /*
+   * La consola se cortó sin que el usuario lo pidiera: o escribió `exit`,
+   * o el watchdog destruyó su instancia. Hay que volver a preguntarle al
+   * servidor, porque si no la interfaz seguiría mostrando un contenedor
+   * inexistente con el botón de desplegar bloqueado, sin salida posible.
+   *
+   * Se consulta dos veces: al destruir una instancia, el contenedor muere
+   * antes de que se borre su fila, así que la primera consulta puede
+   * llegar cuando el servidor todavía la reporta activa.
+   */
+  for (const espera of [0, 3000]) {
+    if (espera) await new Promise((r) => setTimeout(r, espera));
+    try {
+      const status = await refresh();
+      if (!status.active) {
+        term.reset();
+        showTerminal(false);
+        setStatus("La instancia ya no existe", null);
+        return;
+      }
+      setStatus("Consola cerrada — recargá para reabrirla", "warn");
+    } catch {
+      setStatus("Consola desconectada", null);
+      return;
+    }
+  }
+}
+
 function connectWebSocket() {
   const scheme = window.location.protocol === "https:" ? "wss" : "ws";
   socket = new WebSocket(`${scheme}://${window.location.host}/ws/terminal/`);
@@ -176,10 +205,10 @@ function connectWebSocket() {
 
   socket.onclose = () => {
     socket = null;
-    if (!closingOnPurpose) {
-      setStatus("Consola desconectada", null);
-    }
     renderSessionInfo();
+    if (closingOnPurpose) return;
+
+    resincronizar();
   };
 
   socket.onerror = () => setStatus("Error de conexión", "down");

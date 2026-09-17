@@ -1,22 +1,26 @@
 """
 `python manage.py watchdog` — destruye instancias inactivas (ver SDD 4.6
-y flujo 5.3). Pensado para correr en loop (por defecto) o una sola vez
-(--once), p. ej. desde cron.
+y flujo 5.3).
+
+El servidor ya arranca un watchdog integrado (ver `ctf/apps.py`), así que
+este comando es la alternativa para correrlo como proceso aparte: cron,
+systemd, o a mano para probar. El barrido en sí es el mismo código
+(`ctf/watchdog.py`), no una copia.
 """
 
 import time
-from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
-from ctf import docker_client
-from ctf.models import Instance
+from ctf.watchdog import sweep_stale_instances
 
 
 class Command(BaseCommand):
-    help = "Destruye contenedor + red de las instancias que superan el umbral de inactividad."
+    help = (
+        "Destruye contenedor + red de las instancias que superan el umbral "
+        "de inactividad."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -27,37 +31,27 @@ class Command(BaseCommand):
         parser.add_argument(
             "--interval",
             type=int,
-            default=60,
-            help="Segundos entre pasadas cuando corre en loop (por defecto 60).",
+            default=None,
+            help=(
+                "Segundos entre pasadas cuando corre en loop "
+                "(por defecto, CTF_WATCHDOG_INTERVAL_SECONDS)."
+            ),
         )
 
     def handle(self, *args, **options):
+        interval = options["interval"] or settings.CTF_WATCHDOG_INTERVAL_SECONDS
+
         self.stdout.write(
-            f"Watchdog iniciado (umbral={settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS}s, "
-            f"interval={options['interval']}s, once={options['once']})"
+            f"Watchdog iniciado (umbral="
+            f"{settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS}s, "
+            f"intervalo={interval}s, once={options['once']})"
         )
+
         while True:
-            self._sweep()
+            destroyed = sweep_stale_instances()
+            if destroyed:
+                self.stdout.write(f"Instancias destruidas: {destroyed}")
+
             if options["once"]:
                 break
-            time.sleep(options["interval"])
-
-    def _sweep(self):
-        cutoff = timezone.now() - timedelta(
-            seconds=settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS
-        )
-        stale_instances = list(Instance.objects.filter(last_activity__lt=cutoff))
-
-        for instance in stale_instances:
-            self.stdout.write(
-                f"Destruyendo instancia inactiva de {instance.user}: "
-                f"{instance.container_id[:12]}"
-            )
-            try:
-                docker_client.destroy_instance(instance.container_id, instance.network_id)
-            except docker_client.DockerClientError as exc:
-                self.stderr.write(
-                    f"Error destruyendo {instance.container_id[:12]}: {exc}"
-                )
-                continue
-            instance.delete()
+            time.sleep(interval)

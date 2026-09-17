@@ -69,6 +69,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.environ.get("CTF_DB_PATH", BASE_DIR / "db.sqlite3"),
+        "OPTIONS": {
+            # SQLite admite un solo escritor a la vez, y aquí escriben a
+            # la vez todas las consolas abiertas (`last_activity`) más el
+            # watchdog. Sin `timeout`, el segundo escritor falla al
+            # instante con "database is locked"; con él, espera su turno.
+            "timeout": 20,
+        },
     }
 }
 
@@ -112,3 +119,35 @@ CTF_PIDS_LIMIT = int(os.environ.get("CTF_PIDS_LIMIT", "64"))
 INSTANCE_INACTIVITY_TIMEOUT_SECONDS = int(
     os.environ.get("CTF_INACTIVITY_TIMEOUT_SECONDS", str(15 * 60))
 )
+
+# Cada cuánto barre el watchdog buscando instancias vencidas.
+CTF_WATCHDOG_INTERVAL_SECONDS = int(
+    os.environ.get("CTF_WATCHDOG_INTERVAL_SECONDS", "60")
+)
+
+# El watchdog destruye contenedores sin intervención humana, así que tiene
+# que dejar rastro: sin esto sus mensajes se pierden y no hay forma de
+# saber si está funcionando ni qué destruyó.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "ctf": {
+            "format": "{asctime} {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "ctf",
+        },
+    },
+    "loggers": {
+        "ctf": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

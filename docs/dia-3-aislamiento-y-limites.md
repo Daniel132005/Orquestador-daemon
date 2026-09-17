@@ -168,7 +168,7 @@ Revisión del estado de endurecimiento dentro del contenedor:
 | Dispositivos en `/dev` | Solo el conjunto mínimo (`null`, `zero`, `tty`, `pts`...) | Correcto: no hay discos del host |
 | Usuario dentro del contenedor | `uid=0(root)` | Conocido: root dentro del contenedor, no del host |
 | Capacidades | `CapEff: 0000000000000000` tras aplicar `CapDrop: ["ALL"]` | **Corregido** (ver §7.1) |
-| Filesystem raíz | Escribible | Sin `read-only`, fuera de alcance del MVP (SDD §8) |
+| Filesystem raíz | Solo lectura, con `/tmp` en tmpfs de 64 MB | **Corregido** (ver §7.2) |
 
 ### 7.1 Endurecimiento aplicado: `CapDrop: ["ALL"]`
 
@@ -191,7 +191,35 @@ todas las capacidades **no rompe `ping`**. BusyBox usa sockets ICMP de
 datagrama (`SOCK_DGRAM`), que no requieren `CAP_NET_RAW`. Todas las pruebas de
 red de este documento siguen siendo válidas tal cual.
 
-### 7.2 Las capacidades no aíslan la red
+### 7.2 Endurecimiento aplicado: filesystem de solo lectura
+
+Al `HostConfig` se añadió:
+
+```json
+"ReadonlyRootfs": true,
+"Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"}
+```
+
+Comportamiento verificado dentro del contenedor:
+
+| Operación | Resultado |
+|---|---|
+| Escribir en `/` o `/etc` | **Bloqueado** (solo lectura) |
+| Escribir en `/tmp` | Permitido, tope de 64 MB |
+| Consola, lectura, ejecutar binarios del sistema | Funciona igual |
+| Ejecutar un archivo creado en `/tmp` | **Bloqueado** por `noexec` |
+| Correrlo con un intérprete (`sh /tmp/script`) | **Funciona** |
+
+**Matiz sobre `noexec`, importante al diseñar los retos.** La bandera impide
+que el kernel ejecute directamente un archivo depositado en `/tmp`, pero no
+impide que un intérprete lo lea: `./exploit.sh` falla y `sh exploit.sh`
+funciona. En la práctica frena binarios compilados, no scripts.
+
+Si algún reto necesitara que el estudiante compile y ejecute un binario
+propio, habría que darle un directorio sin `noexec`. Hoy no aplica: la imagen
+no trae compilador y la red interna impide descargar uno.
+
+### 7.3 Las capacidades no aíslan la red
 
 Un experimento de control conviene dejarlo registrado, porque corrige una
 intuición equivocada frecuente: se puso un contenedor con **cero capacidades**
@@ -383,10 +411,10 @@ Lo que queda pendiente de atender:
 1. **Acceso del contenedor al host** (§6.2). En este entorno no se alcanzó
    ningún servicio, pero por una particularidad de Docker Desktop, no por
    diseño. **Debe reverificarse en el despliegue real.**
-2. **Endurecimiento del contenedor**: `cap-drop ALL` ya está aplicado (§7.1).
-   Queda pendiente el filesystem de solo lectura y que el proceso no corra
-   como root dentro del contenedor. Declarado fuera de alcance en el SDD §8,
-   pero conviene antes de exponer la plataforma a código hostil de verdad.
+2. **Endurecimiento del contenedor**: ya están aplicados `cap-drop ALL`
+   (§7.1) y el filesystem de solo lectura con `/tmp` en tmpfs (§7.2). Queda
+   pendiente que el proceso no corra como root dentro del contenedor, y los
+   perfiles seccomp. Declarado fuera de alcance en el SDD §8.
 3. **Sin límite global de instancias**: nada impide que N usuarios levanten N
    contenedores hasta agotar el host. Cada contenedor está limitado, pero el
    total no. También está en el SDD §8.

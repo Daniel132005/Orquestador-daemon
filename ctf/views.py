@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db import DatabaseError, IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
@@ -43,13 +44,27 @@ def instance_status(request):
 @login_required
 @require_POST
 def start_instance(request):
-    """POST /api/instance/start/ — ver flujo en SDD 5.1."""
+    """
+    POST /api/instance/start/ — ver flujo en SDD 5.1.
+
+    Quién gana la carrera entre dos peticiones simultáneas del mismo
+    usuario lo decide la restricción `OneToOneField` del modelo: el
+    perdedor recibe `IntegrityError` al insertar y limpia lo que había
+    creado en Docker.
+
+    Las llamadas a Docker quedan deliberadamente FUERA de cualquier
+    transacción. Envolverlas duraba casi un segundo con la base tomada, y
+    como SQLite admite un solo escritor, varias peticiones simultáneas
+    morían con `database is locked` — un error que no es `IntegrityError`,
+    así que ni siquiera se limpiaban los contenedores ya creados.
+    """
     if Instance.objects.filter(user=request.user).exists():
         return JsonResponse({"error": "Ya tienes una instancia activa"}, status=409)
 
     network_name = f"ctf-net-{request.user.pk}-{uuid.uuid4().hex[:8]}"
     network_id = docker_client.create_network(network_name)
 
+    container_id = None
     try:
         container_id = docker_client.create_container(
             image=settings.CTF_CHALLENGE_IMAGE,
@@ -60,15 +75,31 @@ def start_instance(request):
         )
         docker_client.start_container(container_id)
     except docker_client.DockerClientError as exc:
+        # Si el contenedor alcanzó a crearse hay que borrarlo antes que la
+        # red: quedaría sin fila en la base, y el watchdog solo mira filas,
+        # así que nadie lo reclamaría nunca. Ocurre, por ejemplo, cuando
+        # `create` funciona y `start` falla.
+        if container_id is not None:
+            docker_client.remove_container(container_id)
         docker_client.remove_network(network_id)
         return JsonResponse({"error": str(exc)}, status=502)
 
-    instance = Instance.objects.create(
-        user=request.user,
-        container_id=container_id,
-        network_id=network_id,
-        network_name=network_name,
-    )
+    try:
+        instance = Instance.objects.create(
+            user=request.user,
+            container_id=container_id,
+            network_id=network_id,
+            network_name=network_name,
+        )
+    except IntegrityError:
+        # Otra petición del mismo usuario llegó primero.
+        docker_client.destroy_instance(container_id, network_id)
+        return JsonResponse({"error": "Ya tienes una instancia activa"}, status=409)
+    except DatabaseError as exc:
+        # Cualquier otro fallo de base de datos: sin fila que lo respalde,
+        # el contenedor sería un huérfano que nadie volvería a reclamar.
+        docker_client.destroy_instance(container_id, network_id)
+        return JsonResponse({"error": f"Error de base de datos: {exc}"}, status=503)
 
     return JsonResponse(
         {

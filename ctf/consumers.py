@@ -106,6 +106,7 @@ class TerminalConsumer(AsyncWebsocketConsumer):
                 if not chunk:
                     break
                 await self.send(bytes_data=chunk)
+                await self._touch_activity_throttled()
         except (OSError, asyncio.CancelledError):
             pass
         finally:
@@ -121,3 +122,17 @@ class TerminalConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def _touch_activity(self):
         Instance.objects.filter(id=self.instance_id).update(last_activity=timezone.now())
+
+    async def _touch_activity_throttled(self):
+        """
+        Actualiza last_activity como máximo una vez cada 30 segundos.
+        Sin este throttle, un comando como `top` (que genera output cada
+        2-3 segundos) haría una escritura a la BD en cada chunk — decenas
+        por minuto, sin beneficio real porque el watchdog solo revisa cada
+        60 segundos.
+        """
+        now = asyncio.get_event_loop().time()
+        if now - getattr(self, "_last_touch", 0) < 30:
+            return
+        self._last_touch = now
+        await self._touch_activity()

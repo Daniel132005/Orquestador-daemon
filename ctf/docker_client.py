@@ -91,6 +91,8 @@ def create_container(
             "NanoCpus": nano_cpus,
             "PidsLimit": pids_limit,
             "CapDrop": ["ALL"],
+            "ReadonlyRootfs": True,
+            "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
             "AutoRemove": False,
         },
     }

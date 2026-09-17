@@ -225,6 +225,56 @@ independientes y hacen falta las dos.
 
 ---
 
+## Prueba 6c — Filesystem de solo lectura
+
+**En la consola A:**
+
+```sh
+touch /probe              # Read-only file system
+touch /etc/probe          # Read-only file system
+touch /tmp/probe          # funciona
+df -h /tmp                # 64.0M
+
+printf '#!/bin/sh\necho hola\n' > /tmp/x.sh; chmod +x /tmp/x.sh
+/tmp/x.sh                 # Permission denied  (noexec)
+sh /tmp/x.sh              # hola               (el intérprete sí puede)
+```
+
+**Qué significa:** el contenedor corre con `ReadonlyRootfs`, así que un
+estudiante no puede modificar el sistema de archivos del reto. Solo `/tmp` es
+escribible, en memoria (tmpfs) y con tope de 64 MB.
+
+**Matiz sobre `noexec`:** frena binarios depositados en `/tmp`, pero no
+scripts — un intérprete puede leerlos igual. Tenelo en cuenta si diseñás un
+reto que requiera compilar y ejecutar algo.
+
+---
+
+## Prueba 6d — Peticiones simultáneas del mismo usuario
+
+Prueba de concurrencia, para confirmar que no se crean contenedores de más.
+Desde la ventana C, con sesión iniciada, disparar varias peticiones a la vez:
+
+```bash
+for i in 1 2 3 4 5; do
+  curl -s -o /dev/null -w "%{http_code} " -X POST \
+    -H "X-CSRFToken: $TOKEN" -H "Referer: http://localhost:8000/" \
+    -b "sessionid=$SESION; csrftoken=$TOKEN" \
+    http://localhost:8000/api/instance/start/ &
+done; wait; echo
+
+docker ps -q | wc -l                                  # debe ser 1
+docker network ls --filter name=ctf-net -q | wc -l    # debe ser 1
+```
+
+**Esperado:** un `201` y el resto `409`, con **un solo** contenedor y una sola
+red.
+
+**Sería un fallo si:** aparecen códigos `500`, o si quedan más contenedores que
+filas en la base — eso significa recursos huérfanos que nadie va a reclamar.
+
+---
+
 ## Prueba 7 — Agotar la memoria
 
 **En la consola A:**
@@ -505,7 +555,7 @@ límite que conviene agregar antes de usar la plataforma con un curso real.
 | Escala de consolas simultáneas | **Corregido** — 20/20 verificadas, sin consumo de hilos por consola |
 | Base de datos bajo concurrencia | **Frágil** — SQLite serializa escrituras |
 | Límite global de recursos | **Ausente** |
-| Endurecimiento del contenedor | **Parcial** — falta FS de solo lectura y no correr como root |
+| Endurecimiento del contenedor | **Parcial** — `cap-drop ALL` y FS de solo lectura aplicados; falta no correr como root |
 
 Lo que el MVP prometía —aislar a los estudiantes entre sí y del host— está
 cumplido y demostrado. Lo que falta es lo que hace falta para pasar de una demo
