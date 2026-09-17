@@ -50,22 +50,21 @@ class TerminalConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         """
-        El orden importa: primero se cierra el socket del exec, lo que
-        desbloquea al hilo parado en `recv()`, y recién después se espera
-        a que la tarea lectora termine. Si se cancelara la tarea sin
-        esperarla, ese hilo seguiría vivo con un descriptor que el kernel
-        ya podría haber reasignado a la siguiente sesión — y la nueva
-        consola se caería sola a los pocos segundos.
+        Se cancela la tarea lectora y se espera a que termine ANTES de
+        cerrar el socket. Como la lectura la atiende el bucle de asyncio y
+        no un hilo, la cancelación surte efecto de inmediato: al volver de
+        aquí no queda nada esperando sobre ese descriptor, así que cerrarlo
+        es seguro y no se filtra ningún recurso.
         """
         self.shutting_down = True
-
-        if self.exec_socket is not None:
-            await asyncio.to_thread(self.exec_socket.close)
 
         if self.reader_task is not None:
             self.reader_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self.reader_task
+
+        if self.exec_socket is not None:
+            self.exec_socket.close()
 
     async def receive(self, text_data=None, bytes_data=None):
         """
@@ -80,7 +79,7 @@ class TerminalConsumer(AsyncWebsocketConsumer):
             await self._handle_control(text_data)
             return
 
-        await asyncio.to_thread(self.exec_socket.send, bytes_data)
+        await self.exec_socket.send(bytes_data)
         await self._touch_activity()
 
     async def _handle_control(self, text_data):
@@ -103,7 +102,7 @@ class TerminalConsumer(AsyncWebsocketConsumer):
         """Lee del socket hijacked y reenvía al navegador hasta que se corte."""
         try:
             while True:
-                chunk = await asyncio.to_thread(self.exec_socket.recv, 4096)
+                chunk = await self.exec_socket.recv(4096)
                 if not chunk:
                     break
                 await self.send(bytes_data=chunk)

@@ -4,13 +4,16 @@ Cada estudiante autenticado levanta bajo demanda un contenedor Docker aislado
 con un reto de seguridad, interactúa con él mediante una consola en el
 navegador, y el sistema destruye la instancia cuando queda inactiva.
 
-Implementación siguiendo [sdd-plataforma-ctf.md](sdd-plataforma-ctf.md) y el
-[plan de 7 días](plan-mvp-7-dias.md).
+Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), la [arquitectura técnica y su justificación](docs/arquitectura.md) y el
+[plan de 7 días](docs/plan-mvp-7-dias.md).
 
 ## Reportes de avance
 
 - [Día 1 — API de Docker sin SDK](docs/dia-1-api-docker-sin-sdk.md)
 - [Día 2 — Orquestador en Django](docs/dia-2-orquestador-django.md)
+- [Día 3 — Aislamiento de red y límites de recursos](docs/dia-3-aislamiento-y-limites.md)
+- [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
+- [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 
 ---
 
@@ -244,6 +247,15 @@ que el error sale crudo.
 Estás usando `runserver`. `daphne` no sirve archivos estáticos por sí solo; el
 proyecto lo resuelve con `ASGIStaticFilesHandler` en `ctf_platform/asgi.py`,
 que solo se activa por la vía ASGI. Levantá con `daphne`.
+
+**VSCode marca `Cannot find module 'requests_unixsocket'` (u otras dependencias)**
+Falso positivo: VSCode está analizando el código con el Python de Windows, pero
+el proyecto corre con el venv de WSL. Las dependencias no están —ni pueden
+estar— en el Python de Windows, porque `requests-unixsocket` necesita sockets
+Unix. Solución: abrir el proyecto desde WSL (`Ctrl+Shift+P` → *WSL: Connect to
+WSL*) y elegir el intérprete con `Ctrl+Shift+P` → *Python: Select Interpreter*
+→ `~/.venvs/ctf-platform/bin/python`. La ruta es propia de cada máquina, así
+que **no subas `.vscode/settings.json` a git**.
 
 **Los comandos `wsl` se quedan colgados**
 Suele haber procesos `wsl.exe` zombis. En PowerShell: `wsl --shutdown`, y si no

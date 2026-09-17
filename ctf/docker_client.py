@@ -11,6 +11,7 @@ del daemon (ver SDD 4.1), sin usar `docker-py`.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import socket
 
@@ -89,6 +90,7 @@ def create_container(
             "Memory": mem_limit_bytes,
             "NanoCpus": nano_cpus,
             "PidsLimit": pids_limit,
+            "CapDrop": ["ALL"],
             "AutoRemove": False,
         },
     }
@@ -166,24 +168,35 @@ def resize_exec(exec_id: str, rows: int, cols: int) -> None:
 
 class HijackedExecSocket:
     """
-    Envoltorio delgado sobre el socket Unix crudo que queda tras hacer el
-    hijack de `POST /exec/{id}/start`. A partir de ahí, todo lo que se
-    envía y recibe por este socket son los bytes crudos de stdin/stdout
-    del proceso dentro del contenedor (ver SDD 4.4 y 5.2).
+    Envoltorio sobre el socket Unix crudo que queda tras hacer el hijack de
+    `POST /exec/{id}/start`. A partir de ahí, todo lo que se envía y recibe
+    por este socket son los bytes crudos de stdin/stdout del proceso dentro
+    del contenedor (ver SDD 4.4 y 5.2).
+
+    El socket queda en modo NO BLOQUEANTE y la lectura/escritura la atiende
+    el bucle de asyncio. Esto es deliberado: leerlo con un hilo por consola
+    (`asyncio.to_thread(sock.recv, ...)`) dejaba un hilo bloqueado de forma
+    permanente por cada sesión abierta. Como el pool tiene un máximo de
+    `min(32, CPUs + 4)` hilos, la plataforma se quedaba sin hilos alrededor
+    de las 16 consolas, y los de las conexiones caídas no se liberaban nunca
+    porque cancelar la tarea no interrumpe a un hilo ya bloqueado en recv().
+    Con `sock_recv`/`sock_sendall` no hay hilos de por medio y la
+    cancelación es inmediata.
     """
 
     def __init__(self, sock: socket.socket):
+        sock.setblocking(False)
         self._sock = sock
 
-    def send(self, data: bytes) -> None:
+    async def send(self, data: bytes) -> None:
         if self._sock is None:
             raise OSError("El socket del exec ya fue cerrado")
-        self._sock.sendall(data)
+        await asyncio.get_running_loop().sock_sendall(self._sock, data)
 
-    def recv(self, bufsize: int = 4096) -> bytes:
+    async def recv(self, bufsize: int = 4096) -> bytes:
         if self._sock is None:
             return b""
-        return self._sock.recv(bufsize)
+        return await asyncio.get_running_loop().sock_recv(self._sock, bufsize)
 
     def close(self) -> None:
         """

@@ -16,3 +16,8 @@ env/
 
 # Resultado de collectstatic
 staticfiles/
+
+# Configuración del editor: la ruta del intérprete es propia de cada
+# máquina (/home/TU_USUARIO/.venvs/...), no sirve para los demás
+.vscode/
+.idea/
