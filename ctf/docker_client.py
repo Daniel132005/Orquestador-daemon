@@ -138,12 +138,17 @@ def destroy_instance(container_id: str, network_id: str) -> None:
 # --- Exec + hijack -----------------------------------------------------
 
 
-def create_exec(container_id: str, cmd: list[str] | None = None) -> str:
+def create_exec(
+    container_id: str,
+    cmd: list[str] | None = None,
+    tty: bool = True,
+    attach: bool = True,
+) -> str:
     payload = {
-        "AttachStdin": True,
-        "AttachStdout": True,
-        "AttachStderr": True,
-        "Tty": True,
+        "AttachStdin": attach,
+        "AttachStdout": attach,
+        "AttachStderr": attach,
+        "Tty": tty,
         "Cmd": cmd or ["/bin/sh"],
     }
     response = _check(
@@ -151,6 +156,75 @@ def create_exec(container_id: str, cmd: list[str] | None = None) -> str:
         (201,),
     )
     return response.json()["Id"]
+
+
+def console_exec_command(pid_file: str, shell: str | None = None) -> list[str]:
+    """
+    Comando del shell de una consola. Antes de convertirse en el shell
+    interactivo deja su PID en un archivo, para poder matarlo cuando el
+    estudiante se desconecte (ver `terminate_console`).
+
+    `exec` reemplaza el proceso conservando el mismo PID, así que el número
+    guardado sigue siendo válido.
+
+    El envoltorio siempre es `/bin/sh` porque existe en cualquier imagen.
+    Para el shell interactivo se prefiere `bash` cuando la imagen lo trae,
+    porque es el que activa `bracketed paste`: sin él, un texto pegado se
+    ejecuta solo, línea por línea, sin darle al estudiante ocasión de
+    revisarlo (ver docs/dia-5-consola-websocket.md §5.5).
+
+    La detección se hace dentro del contenedor, así que funciona con
+    cualquier imagen sin configurar nada: si no hay `bash`, se usa `sh`
+    igual que antes. `CTF_CONSOLE_SHELL` fuerza uno concreto.
+    """
+    shell = shell or getattr(settings, "CTF_CONSOLE_SHELL", "") or None
+    if shell:
+        arranque = f"exec {shell}"
+    else:
+        arranque = (
+            "if command -v bash >/dev/null 2>&1; "
+            "then exec bash; else exec /bin/sh; fi"
+        )
+    return ["/bin/sh", "-c", f"echo $$ > {pid_file}; {arranque}"]
+
+
+def terminate_console(container_id: str, pid_file: str) -> None:
+    """
+    Mata el shell de una consola que ya se cerró.
+
+    Docker NO termina el proceso de un `exec` cuando se corta la conexión:
+    el shell queda vivo durmiendo sobre una terminal que nadie va a leer.
+    Medido, cada reconexión sumaba un proceso contra el `PidsLimit` del
+    contenedor, así que tras unas 55 recargas el estudiante se quedaba sin
+    poder ejecutar nada dentro de su propio reto.
+
+    Se usa SIGKILL a propósito: un shell interactivo **ignora** SIGTERM —es
+    lo que impide que Ctrl-C lo mate— así que un `kill` normal no surtía
+    ningún efecto. Se mata el grupo de procesos entero (`-PID`) para no
+    dejar huérfanos los trabajos que el shell hubiera lanzado en segundo
+    plano.
+
+    Es una limpieza best-effort: si el archivo ya no está, no pasa nada.
+    """
+    exec_id = create_exec(
+        container_id,
+        cmd=[
+            "/bin/sh",
+            "-c",
+            f"p=$(cat {pid_file} 2>/dev/null); rm -f {pid_file}; "
+            '[ -n "$p" ] && kill -9 -$p 2>/dev/null; '
+            '[ -n "$p" ] && kill -9 $p 2>/dev/null; true',
+        ],
+        tty=False,
+        attach=False,
+    )
+    response = _session().post(
+        f"{BASE_URL}/exec/{exec_id}/start", json={"Detach": True, "Tty": False}
+    )
+    if response.status_code not in (200, 201):
+        raise DockerClientError(
+            f"No se pudo limpiar la consola de {container_id[:12]}: {response.text}"
+        )
 
 
 def resize_exec(exec_id: str, rows: int, cols: int) -> None:

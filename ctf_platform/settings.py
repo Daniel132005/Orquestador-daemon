@@ -109,6 +109,11 @@ DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "/var/run/docker.sock"
 # Imagen usada para el reto de seguridad que se levanta por usuario.
 CTF_CHALLENGE_IMAGE = os.environ.get("CTF_CHALLENGE_IMAGE", "ctf-challenge:latest")
 
+# Shell que abre la consola. Vacío = detección automática: usa `bash` si la
+# imagen lo trae (activa `bracketed paste`, que impide que un texto pegado se
+# ejecute solo) y `sh` si no. Se puede forzar uno concreto.
+CTF_CONSOLE_SHELL = os.environ.get("CTF_CONSOLE_SHELL", "")
+
 # Límites de recursos por contenedor (ver SDD 6 — Aislamiento y Seguridad).
 CTF_MEMORY_LIMIT_BYTES = int(os.environ.get("CTF_MEMORY_LIMIT_MB", "256")) * 1024 * 1024
 CTF_NANO_CPUS = int(os.environ.get("CTF_NANO_CPUS", str(500_000_000)))  # 0.5 CPU

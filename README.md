@@ -125,13 +125,17 @@ mkdir -p ~/ctf-data
 ~/.venvs/ctf-platform/bin/python manage.py createsuperuser
 ```
 
-### 7. Descargar la imagen del reto
-
-Mientras no exista una imagen de reto real, se usa `alpine` como marcador:
+### 7. Construir la imagen del reto
 
 ```bash
-docker pull alpine:latest
+docker build -t ctf-challenge:latest challenge/
 ```
+
+Es Alpine con `bash` añadido (16 MB). El `bash` no es capricho: es lo que
+activa `bracketed paste`, la protección que impide que un texto pegado en la
+consola se ejecute solo línea por línea. La consola detecta si la imagen lo
+trae y lo usa automáticamente; con una imagen sin `bash` funciona igual, con
+`sh`.
 
 ---
 
@@ -194,6 +198,7 @@ Detalles y límites conocidos en el
 |---|---|---|
 | `CTF_DB_PATH` | `db.sqlite3` del proyecto | Ruta del archivo SQLite. **En WSL, obligatoria** (fuera de `/mnt/c`) |
 | `CTF_CHALLENGE_IMAGE` | `ctf-challenge:latest` | Imagen que se levanta por estudiante |
+| `CTF_CONSOLE_SHELL` | (automático) | Shell de la consola. Vacío = usa `bash` si la imagen lo trae, `sh` si no. Solo para forzar uno concreto |
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Socket del daemon |
 | `CTF_MEMORY_LIMIT_MB` | `256` | Límite de memoria por contenedor |
 | `CTF_NANO_CPUS` | `500000000` | CPU (500000000 = 0.5 núcleos) |

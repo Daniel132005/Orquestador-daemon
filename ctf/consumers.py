@@ -7,6 +7,7 @@ hace el hijack; después solo reenvía bytes en ambas direcciones.
 import asyncio
 import contextlib
 import json
+import uuid
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -33,10 +34,14 @@ class TerminalConsumer(AsyncWebsocketConsumer):
             return
 
         self.instance_id = instance.id
+        self.container_id = instance.container_id
+        self.pid_file = f"/tmp/.ctf-console-{uuid.uuid4().hex}"
 
         try:
             self.exec_id = await asyncio.to_thread(
-                docker_client.create_exec, instance.container_id
+                docker_client.create_exec,
+                instance.container_id,
+                docker_client.console_exec_command(self.pid_file),
             )
             self.exec_socket = await asyncio.to_thread(
                 docker_client.start_exec_hijacked, self.exec_id
@@ -65,6 +70,17 @@ class TerminalConsumer(AsyncWebsocketConsumer):
 
         if self.exec_socket is not None:
             self.exec_socket.close()
+
+        # Cerrar el socket no mata el shell del exec: Docker lo deja vivo.
+        # Sin esta limpieza, cada reconexión dejaría un proceso más contra
+        # el límite de PIDs del contenedor.
+        if getattr(self, "pid_file", None):
+            with contextlib.suppress(docker_client.DockerClientError, OSError):
+                await asyncio.to_thread(
+                    docker_client.terminate_console,
+                    self.container_id,
+                    self.pid_file,
+                )
 
     async def receive(self, text_data=None, bytes_data=None):
         """

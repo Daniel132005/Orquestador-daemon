@@ -516,6 +516,30 @@ done | grep asyncio
 Si ves `futex_wait_queue`, los hilos están libres. Si vieras
 `unix_stream_read_generic` en muchos de ellos, habría vuelto el problema.
 
+## E2b — Fuga de procesos al reconectar
+
+Cada conexión de consola crea un `exec` en el contenedor. Si al desconectar no
+se matara su shell, los procesos se acumularían contra el `PidsLimit` de 64.
+
+**Cómo comprobarlo:** con una instancia desplegada, recargá la página del
+navegador unas 10 veces seguidas. Después, en la ventana C:
+
+```bash
+CID=$(docker ps -q | head -1)
+docker exec $CID cat /sys/fs/cgroup/pids.current
+docker exec $CID ps -o pid,stat,args
+```
+
+**Esperado:** `pids.current` se mantiene estable (2 o 3), y en `ps` aparece un
+solo `/bin/sh` además del proceso principal.
+
+**Sería un fallo si:** el número crece con cada recarga. Eso significaría que
+tras unas 55 recargas el estudiante se quedaría sin poder ejecutar nada en su
+propio contenedor. Fue un bug real, corregido matando el shell del `exec` al
+desconectar (ver [Día 5 §5.4](dia-5-consola-websocket.md)).
+
+---
+
 ## E3 — Contención de SQLite
 
 Cada tecla que escribe un estudiante hace un `UPDATE` de `last_activity`.
@@ -553,6 +577,9 @@ límite que conviene agregar antes de usar la plataforma con un curso real.
 | Socket de Docker fuera del contenedor | **Correcto** |
 | Capacidades del contenedor | **`cap-drop ALL` aplicado**, sin costo funcional |
 | Escala de consolas simultáneas | **Corregido** — 20/20 verificadas, sin consumo de hilos por consola |
+| Procesos al reconectar | **Corregido** — 0 fugas en 25 reconexiones (antes 1 por cada una) |
+| Inundación de salida de un estudiante | **No afecta a los demás** — 17 MB/s sin degradar al resto |
+| Pegado de texto | Íntegro hasta 1 MB. Se **ejecuta** al pegar: falta `bracketed paste` (ver Día 5 §5.5) |
 | Base de datos bajo concurrencia | **Frágil** — SQLite serializa escrituras |
 | Límite global de recursos | **Ausente** |
 | Endurecimiento del contenedor | **Parcial** — `cap-drop ALL` y FS de solo lectura aplicados; falta no correr como root |
