@@ -17,6 +17,9 @@ const API = {
   challenges: "/api/challenges/",
   submitFlag: "/api/challenges/submit/",
   platformSettings: "/api/platform-settings/",
+  liveInstances: "/api/platform-settings/instances/",
+  destroyContainer: "/api/platform-settings/instances/destroy/",
+  manageUsers: "/api/platform-settings/users/",
 };
 
 const el = {
@@ -79,6 +82,24 @@ const el = {
   settingsTimeIntermedio: document.getElementById("settings-time-intermedio"),
   settingsTimeDificil: document.getElementById("settings-time-dificil"),
   settingsFeedback: document.getElementById("settings-feedback"),
+  settingsTabBtnConfig: document.getElementById("settings-tab-btn-config"),
+  settingsTabBtnInstances: document.getElementById("settings-tab-btn-instances"),
+  settingsTabBtnUsers: document.getElementById("settings-tab-btn-users"),
+  settingsTabConfig: document.getElementById("settings-tab-config"),
+  settingsTabInstances: document.getElementById("settings-tab-instances"),
+  settingsTabUsers: document.getElementById("settings-tab-users"),
+  instancesTbody: document.getElementById("instances-tbody"),
+  instancesFeedback: document.getElementById("instances-feedback"),
+  instancesRefreshBtn: document.getElementById("btn-instances-refresh"),
+  instancesCloseBtn: document.getElementById("btn-instances-close"),
+  newUserUsername: document.getElementById("new-user-username"),
+  newUserPassword: document.getElementById("new-user-password"),
+  newUserIsStaff: document.getElementById("new-user-is-staff"),
+  generatePasswordBtn: document.getElementById("btn-generate-password"),
+  usersFeedback: document.getElementById("users-feedback"),
+  createUserBtn: document.getElementById("btn-create-user"),
+  usersCloseBtn: document.getElementById("btn-users-close"),
+  usersTbody: document.getElementById("users-tbody"),
   settingsSaveBtn: document.getElementById("btn-settings-save"),
   settingsCancelBtn: document.getElementById("btn-settings-cancel"),
 };
@@ -766,6 +787,7 @@ if (el.userChip && el.userChip.dataset.isStaff === "true") {
       el.settingsTimeDificil.value = Math.round(config.time_limit_dificil_seconds / 60);
       el.settingsFeedback.hidden = true;
       el.settingsModal.hidden = false;
+      cambiarTabPanel("config");
     } catch (err) {
       setStatus(err.message, "warn");
     }
@@ -774,6 +796,234 @@ if (el.userChip && el.userChip.dataset.isStaff === "true") {
 
 if (el.settingsCancelBtn) {
   el.settingsCancelBtn.addEventListener("click", () => {
+    el.settingsModal.hidden = true;
+  });
+}
+
+function cambiarTabPanel(tab) {
+  if (!el.settingsTabConfig || !el.settingsTabInstances || !el.settingsTabUsers) return;
+
+  el.settingsTabConfig.hidden = tab !== "config";
+  el.settingsTabInstances.hidden = tab !== "instances";
+  el.settingsTabUsers.hidden = tab !== "users";
+  el.settingsTabBtnConfig.classList.toggle("is-active", tab === "config");
+  el.settingsTabBtnInstances.classList.toggle("is-active", tab === "instances");
+  el.settingsTabBtnUsers.classList.toggle("is-active", tab === "users");
+
+  if (tab === "instances") cargarInstanciasEnVivo();
+  if (tab === "users") cargarUsuarios();
+}
+
+if (el.settingsTabBtnUsers) {
+  el.settingsTabBtnUsers.addEventListener("click", () => cambiarTabPanel("users"));
+}
+
+if (el.settingsTabBtnConfig) {
+  el.settingsTabBtnConfig.addEventListener("click", () => cambiarTabPanel("config"));
+}
+if (el.settingsTabBtnInstances) {
+  el.settingsTabBtnInstances.addEventListener("click", () => cambiarTabPanel("instances"));
+}
+
+function formatearMomento(instancia) {
+  const iso = instancia.created ? instancia.created * 1000 : instancia.last_activity;
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function renderInstancesTable(instancias) {
+  if (!el.instancesTbody) return;
+  if (!instancias.length) {
+    el.instancesTbody.innerHTML = '<tr><td colspan="6" class="instances-empty">Nada corriendo ahora mismo.</td></tr>';
+    return;
+  }
+  el.instancesTbody.innerHTML = instancias
+    .map(
+      (i) => `
+    <tr>
+      <td><span class="instance-state-tag is-${i.estado}">${i.estado}</span></td>
+      <td>${i.user || "—"}</td>
+      <td>${i.challenge || "—"}</td>
+      <td title="${i.container_id}">${i.container_id.slice(0, 12)}</td>
+      <td>${formatearMomento(i)}</td>
+      <td><button type="button" class="btn-instance-destroy" data-container="${i.container_id}" data-network="${i.network_id || ""}">Destruir</button></td>
+    </tr>
+  `
+    )
+    .join("");
+}
+
+async function cargarInstanciasEnVivo() {
+  if (!el.instancesTbody) return;
+  try {
+    const data = await callApi(API.liveInstances, "GET");
+    renderInstancesTable(data.instances);
+    if (el.instancesFeedback) el.instancesFeedback.hidden = true;
+  } catch (err) {
+    if (el.instancesFeedback) {
+      el.instancesFeedback.textContent = err.message;
+      el.instancesFeedback.className = "settings-feedback is-error";
+      el.instancesFeedback.hidden = false;
+    }
+  }
+}
+
+if (el.instancesTbody) {
+  el.instancesTbody.addEventListener("click", async (evento) => {
+    const boton = evento.target.closest(".btn-instance-destroy");
+    if (!boton) return;
+    boton.disabled = true;
+    boton.textContent = "...";
+    try {
+      await callApi(API.destroyContainer, "POST", {
+        container_id: boton.dataset.container,
+        network_id: boton.dataset.network || null,
+      });
+      await cargarInstanciasEnVivo();
+      await refresh();
+    } catch (err) {
+      if (el.instancesFeedback) {
+        el.instancesFeedback.textContent = err.message;
+        el.instancesFeedback.className = "settings-feedback is-error";
+        el.instancesFeedback.hidden = false;
+      }
+      boton.disabled = false;
+      boton.textContent = "Destruir";
+    }
+  });
+}
+
+if (el.instancesRefreshBtn) {
+  el.instancesRefreshBtn.addEventListener("click", cargarInstanciasEnVivo);
+}
+if (el.instancesCloseBtn) {
+  el.instancesCloseBtn.addEventListener("click", () => {
+    el.settingsModal.hidden = true;
+  });
+}
+
+/*
+ * Un solo intervalo, siempre corriendo, en vez de arrancarlo/pararlo al
+ * abrir y cerrar el panel: la pestaña de instancias se puede cerrar por
+ * varios caminos (el botón, Cancelar, o clickeando afuera del recuadro
+ * -- ese último es un atributo `onclick` inline en el HTML, sin aviso
+ * para este script). Más simple no hacer nada la mayoría de los ticks
+ * que tratar de sincronizar el apagado con cada camino de cierre.
+ */
+setInterval(() => {
+  if (
+    el.settingsModal &&
+    !el.settingsModal.hidden &&
+    el.settingsTabInstances &&
+    !el.settingsTabInstances.hidden
+  ) {
+    cargarInstanciasEnVivo();
+  }
+}, 5000);
+
+/*
+ * Mismo criterio que en el backend (`views.manage_users_view`): solo
+ * letras (con acentos/ñ) y guion bajo, sin números ni espacios, entre
+ * 3 y 20 caracteres. Esto es solo para avisar rápido en el formulario
+ * -- la validación que de verdad importa es la del servidor, esto
+ * nunca la reemplaza.
+ */
+const PATRON_USUARIO = /^[A-Za-zÁÉÍÓÚÑáéíóúñ_]{3,20}$/;
+
+function generarClave() {
+  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let clave = "";
+  for (let i = 0; i < 10; i++) {
+    clave += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+  }
+  return clave;
+}
+
+if (el.generatePasswordBtn) {
+  el.generatePasswordBtn.addEventListener("click", () => {
+    el.newUserPassword.value = generarClave();
+    el.newUserPassword.type = "text";
+  });
+}
+
+function renderUsersTable(usuarios) {
+  if (!el.usersTbody) return;
+  if (!usuarios.length) {
+    el.usersTbody.innerHTML = '<tr><td colspan="3" class="instances-empty">Sin usuarios todavía.</td></tr>';
+    return;
+  }
+  el.usersTbody.innerHTML = usuarios
+    .map(
+      (u) => `
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.is_staff ? '<span class="user-staff-tag">Staff</span>' : "—"}</td>
+      <td>${new Date(u.date_joined).toLocaleDateString("es")}</td>
+    </tr>
+  `
+    )
+    .join("");
+}
+
+async function cargarUsuarios() {
+  if (!el.usersTbody) return;
+  try {
+    const data = await callApi(API.manageUsers, "GET");
+    renderUsersTable(data.users);
+  } catch (err) {
+    if (el.usersFeedback) {
+      el.usersFeedback.textContent = err.message;
+      el.usersFeedback.className = "settings-feedback is-error";
+      el.usersFeedback.hidden = false;
+    }
+  }
+}
+
+if (el.createUserBtn) {
+  el.createUserBtn.addEventListener("click", async () => {
+    const username = el.newUserUsername.value.trim();
+    const password = el.newUserPassword.value;
+
+    if (!PATRON_USUARIO.test(username)) {
+      el.usersFeedback.textContent =
+        "El usuario tiene que tener entre 3 y 20 caracteres, solo letras y guion bajo (sin números ni espacios).";
+      el.usersFeedback.className = "settings-feedback is-error";
+      el.usersFeedback.hidden = false;
+      return;
+    }
+    if (password.length < 6) {
+      el.usersFeedback.textContent = "La clave tiene que tener al menos 6 caracteres.";
+      el.usersFeedback.className = "settings-feedback is-error";
+      el.usersFeedback.hidden = false;
+      return;
+    }
+
+    el.createUserBtn.disabled = true;
+    try {
+      await callApi(API.manageUsers, "POST", {
+        username,
+        password,
+        is_staff: el.newUserIsStaff.checked,
+      });
+      el.usersFeedback.textContent = `Usuario "${username}" creado. Anotá la clave -- no se puede volver a ver.`;
+      el.usersFeedback.className = "settings-feedback is-success";
+      el.usersFeedback.hidden = false;
+      el.newUserUsername.value = "";
+      el.newUserPassword.value = "";
+      el.newUserIsStaff.checked = false;
+      await cargarUsuarios();
+    } catch (err) {
+      el.usersFeedback.textContent = err.message;
+      el.usersFeedback.className = "settings-feedback is-error";
+      el.usersFeedback.hidden = false;
+    } finally {
+      el.createUserBtn.disabled = false;
+    }
+  });
+}
+
+if (el.usersCloseBtn) {
+  el.usersCloseBtn.addEventListener("click", () => {
     el.settingsModal.hidden = true;
   });
 }

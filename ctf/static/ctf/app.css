@@ -1490,7 +1490,211 @@ body {
 
 .settings-card {
   text-align: left;
-  max-width: 380px;
+  max-width: 560px;
+  width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-line) transparent;
+}
+
+.settings-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-card::-webkit-scrollbar-thumb {
+  background: var(--green-line);
+  border-radius: 4px;
+}
+
+.settings-card::-webkit-scrollbar-thumb:hover {
+  background: var(--green);
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-tab {
+  padding: 8px 4px;
+  margin-bottom: -1px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  color: var(--text);
+}
+
+.settings-tab.is-active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+.settings-tab-panel[hidden] {
+  display: none;
+}
+
+.instances-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.instances-note {
+  font-size: 10.5px;
+  color: var(--muted-dim);
+}
+
+.instances-table-wrap {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.instances-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.instances-table th {
+  position: sticky;
+  top: 0;
+  padding: 7px 8px;
+  text-align: left;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.instances-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.instances-table tr:last-child td {
+  border-bottom: none;
+}
+
+.instances-empty {
+  text-align: center;
+  color: var(--muted-dim);
+  padding: 20px 0;
+}
+
+.instance-state-tag {
+  display: inline-flex;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 999px;
+}
+
+.instance-state-tag.is-activa {
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid var(--green-line);
+}
+
+.instance-state-tag.is-huerfana {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid rgba(245, 181, 68, 0.35);
+}
+
+.instance-state-tag.is-fantasma {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 107, 122, 0.4);
+}
+
+.btn-instance-destroy {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 107, 122, 0.35);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-instance-destroy:hover {
+  background: rgba(255, 107, 122, 0.22);
+}
+
+.btn-instance-destroy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Panel oculto: pestaña Usuarios ---------- */
+
+.user-password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.user-password-row input {
+  flex: 1;
+}
+
+.user-staff-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 16px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.user-staff-check input {
+  accent-color: var(--green);
+}
+
+.users-table-wrap {
+  max-height: 220px;
+}
+
+.user-staff-tag {
+  display: inline-flex;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid var(--green-line);
+  border-radius: 4px;
 }
 
 .settings-title,

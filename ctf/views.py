@@ -1,7 +1,9 @@
 import json
+import re
 import uuid
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, IntegrityError
 from django.http import JsonResponse
@@ -66,6 +68,198 @@ def platform_settings_view(request):
             setattr(config, campo, valor)
         config.save()
         return JsonResponse({campo: getattr(config, campo) for campo in campos})
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@login_required
+@require_GET
+def live_instances_view(request):
+    """
+    GET /api/platform-settings/instances/ — panel oculto: cruza lo que
+    dice Docker de verdad (`docker_client.list_ctf_containers`) contra
+    las filas de `Instance`, para ver de un vistazo:
+
+    - huérfanos: contenedor real sin fila que lo reclame.
+    - fantasmas: fila en la base sin contenedor real detrás.
+    - el resto, en sincronía entre las dos fuentes.
+
+    Mismo control de acceso que `platform_settings_view`: solo staff.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para ver esto"}, status=403)
+
+    try:
+        contenedores = docker_client.list_ctf_containers()
+    except docker_client.DockerClientError as exc:
+        return JsonResponse({"error": str(exc)}, status=502)
+
+    instancias = list(Instance.objects.select_related("user").all())
+    por_container_id = {i.container_id: i for i in instancias}
+    vistos = set()
+
+    User = get_user_model()
+
+    def usuario_por_red(network_name: str | None) -> str | None:
+        """
+        Para un huérfano (sin fila en `Instance`) no hay otra forma de
+        saber de quién era: se le adivina el usuario al nombre de la
+        red, que la plataforma siempre arma como
+        `ctf-net-{id_usuario}-{random}` (ver `start_instance`).
+        """
+        if not network_name or not network_name.startswith("ctf-net-"):
+            return None
+        try:
+            user_pk = int(network_name.split("-")[2])
+        except (IndexError, ValueError):
+            return None
+        usuario = User.objects.filter(pk=user_pk).first()
+        return usuario.username if usuario else f"(usuario #{user_pk}, no existe más)"
+
+    filas = []
+    for c in contenedores:
+        instancia = por_container_id.get(c["container_id"])
+        vistos.add(c["container_id"])
+
+        if instancia:
+            usuario = instancia.user.username
+        else:
+            deducido = usuario_por_red(c["network_name"])
+            usuario = f"{deducido} (deducido, sin fila)" if deducido else None
+
+        filas.append(
+            {
+                "container_id": c["container_id"],
+                "network_id": c["network_id"],
+                "network_name": c["network_name"],
+                "image": c["image"],
+                "docker_status": c["status"],
+                "created": c["created"],
+                "estado": "activa" if instancia else "huerfana",
+                "user": usuario,
+                "challenge": instancia.challenge if instancia else None,
+                "last_activity": instancia.last_activity.isoformat() if instancia else None,
+            }
+        )
+
+    for instancia in instancias:
+        if instancia.container_id not in vistos:
+            filas.append(
+                {
+                    "container_id": instancia.container_id,
+                    "network_id": instancia.network_id,
+                    "image": None,
+                    "docker_status": None,
+                    "created": None,
+                    "estado": "fantasma",
+                    "user": instancia.user.username,
+                    "challenge": instancia.challenge,
+                    "last_activity": instancia.last_activity.isoformat(),
+                }
+            )
+
+    return JsonResponse({"instances": filas})
+
+
+@login_required
+@require_POST
+def destroy_container_view(request):
+    """
+    POST /api/platform-settings/instances/destroy/ — destruye cualquier
+    contenedor+red desde el panel oculto, tenga fila en `Instance` o no.
+    Es la forma de limpiar un huérfano de verdad sin usar `docker` a
+    mano (que fue justo lo que causó el incidente del Día 15).
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para hacer esto"}, status=403)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    container_id = (data.get("container_id") or "").strip()
+    if not container_id:
+        return JsonResponse({"error": "Falta container_id"}, status=400)
+
+    instance = Instance.objects.filter(container_id=container_id).first()
+    network_id = data.get("network_id") or (instance.network_id if instance else None)
+
+    try:
+        docker_client.stop_container(container_id)
+        docker_client.remove_container(container_id)
+        if network_id:
+            docker_client.remove_network(network_id)
+    except docker_client.DockerClientError as exc:
+        return JsonResponse({"error": str(exc)}, status=502)
+
+    if instance:
+        instance.delete()
+
+    return JsonResponse({"status": "destruido"})
+
+
+@login_required
+def manage_users_view(request):
+    """
+    GET/POST /api/platform-settings/users/ — panel oculto: crear cuentas
+    (profesor, estudiantes) sin pasar por `/admin/` ni por
+    `manage.py createsuperuser` a mano. Mismo control de acceso que el
+    resto del panel: `is_staff`.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para hacer esto"}, status=403)
+
+    User = get_user_model()
+
+    if request.method == "GET":
+        usuarios = [
+            {
+                "username": u.username,
+                "is_staff": u.is_staff,
+                "date_joined": u.date_joined.isoformat(),
+            }
+            for u in User.objects.order_by("username")
+        ]
+        return JsonResponse({"users": usuarios})
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "JSON inválido"}, status=400)
+
+        username = (data.get("username") or "").strip()
+        password = data.get("password") or ""
+        es_staff = bool(data.get("is_staff"))
+
+        if not username or not password:
+            return JsonResponse({"error": "Usuario y clave son obligatorios"}, status=400)
+        if not re.fullmatch(r"[A-Za-zÁÉÍÓÚÑáéíóúñ_]{3,20}", username):
+            return JsonResponse(
+                {
+                    "error": (
+                        "El usuario tiene que tener entre 3 y 20 caracteres, "
+                        "solo letras y guion bajo (sin números ni espacios)."
+                    )
+                },
+                status=400,
+            )
+        if len(password) < 6:
+            return JsonResponse(
+                {"error": "La clave tiene que tener al menos 6 caracteres"}, status=400
+            )
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({"error": f"Ya existe un usuario '{username}'"}, status=400)
+
+        user = User.objects.create_user(username=username, password=password)
+        if es_staff:
+            user.is_staff = True
+            user.save()
+
+        return JsonResponse(
+            {"status": "creado", "username": user.username, "is_staff": user.is_staff}
+        )
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 

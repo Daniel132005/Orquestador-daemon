@@ -22,6 +22,8 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 12 — El navegador estaba corriendo un `terminal.js` viejo](docs/dia-12-cache-de-estaticos.md)
 - [Día 13 — El modal nunca estuvo realmente oculto](docs/dia-13-modal-siempre-visible.md)
 - [Día 14 — Configuración del watchdog editable desde /admin/](docs/dia-14-configuracion-en-caliente.md)
+- [Día 15 — Vida máxima por dificultad, editable en caliente, con reloj](docs/dia-15-tiempo-por-dificultad.md)
+- [Día 16 — Pestaña de instancias en vivo en el panel oculto](docs/dia-16-panel-instancias-en-vivo.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
 - [Soluciones de los 10 retos OWASP](docs/soluciones-retos.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)

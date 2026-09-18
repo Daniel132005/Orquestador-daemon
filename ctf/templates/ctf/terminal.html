@@ -228,8 +228,14 @@
   <div class="modal-backdrop" id="settings-modal" hidden onclick="if (event.target === this) this.hidden = true">
     <div class="modal-card settings-card">
       <h2 class="modal-title settings-title">Panel oculto</h2>
-      <p class="modal-subtitle settings-subtitle">Configuración del watchdog</p>
 
+      <div class="settings-tabs" role="tablist">
+        <button type="button" class="settings-tab is-active" id="settings-tab-btn-config" data-tab="config">Configuración</button>
+        <button type="button" class="settings-tab" id="settings-tab-btn-instances" data-tab="instances">Instancias en vivo</button>
+        <button type="button" class="settings-tab" id="settings-tab-btn-users" data-tab="users">Usuarios</button>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-config">
       <div class="settings-field">
         <label for="settings-inactivity">Umbral de inactividad (minutos)</label>
         <div class="number-stepper">
@@ -289,6 +295,78 @@
       <div class="modal-actions settings-actions">
         <button type="button" class="btn btn-ghost" id="btn-settings-cancel">Cancelar</button>
         <button type="button" class="btn btn-primary" id="btn-settings-save">Guardar</button>
+      </div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-instances" hidden>
+        <div class="instances-toolbar">
+          <span class="instances-note">Se actualiza sola cada 5s mientras esta pestaña está abierta.</span>
+          <button type="button" class="btn-copy" id="btn-instances-refresh">Actualizar ahora</button>
+        </div>
+        <div class="instances-table-wrap">
+          <table class="instances-table">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Usuario</th>
+                <th>Reto</th>
+                <th>Contenedor</th>
+                <th>Creado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="instances-tbody">
+              <tr><td colspan="6" class="instances-empty">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="settings-feedback" id="instances-feedback" hidden></p>
+        <div class="modal-actions settings-actions">
+          <button type="button" class="btn btn-ghost" id="btn-instances-close">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-users" hidden>
+        <p class="settings-section-label" style="margin-top: 0; padding-top: 0; border-top: none;">Crear cuenta</p>
+
+        <div class="settings-field">
+          <label for="new-user-username">Usuario</label>
+          <input type="text" id="new-user-username" autocomplete="off" placeholder="ej. profesor_garcia" />
+        </div>
+        <div class="settings-field">
+          <label for="new-user-password">Clave</label>
+          <div class="user-password-row">
+            <input type="text" id="new-user-password" autocomplete="off" placeholder="Al menos 6 caracteres" />
+            <button type="button" class="btn-copy" id="btn-generate-password">Generar</button>
+          </div>
+        </div>
+        <label class="user-staff-check">
+          <input type="checkbox" id="new-user-is-staff" />
+          Darle acceso de staff (puede ver este panel oculto)
+        </label>
+
+        <p class="settings-feedback" id="users-feedback" hidden></p>
+
+        <div class="modal-actions settings-actions">
+          <button type="button" class="btn btn-ghost" id="btn-users-close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="btn-create-user">Crear usuario</button>
+        </div>
+
+        <p class="settings-section-label">Cuentas existentes</p>
+        <div class="instances-table-wrap users-table-wrap">
+          <table class="instances-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Staff</th>
+                <th>Creada</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="3" class="instances-empty">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

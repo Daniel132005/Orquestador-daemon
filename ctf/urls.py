@@ -9,4 +9,7 @@ urlpatterns = [
     path("instance/start/", views.start_instance, name="instance-start"),
     path("instance/stop/", views.stop_instance, name="instance-stop"),
     path("platform-settings/", views.platform_settings_view, name="platform-settings"),
+    path("platform-settings/instances/", views.live_instances_view, name="platform-instances"),
+    path("platform-settings/instances/destroy/", views.destroy_container_view, name="platform-instance-destroy"),
+    path("platform-settings/users/", views.manage_users_view, name="platform-users"),
 ]

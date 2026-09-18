@@ -147,6 +147,40 @@ def destroy_instance(container_id: str, network_id: str) -> None:
     remove_network(network_id)
 
 
+def list_ctf_containers() -> list[dict]:
+    """
+    Contenedores reales que corren alguna imagen `ctf-reto-*`, tal cual
+    los ve Docker -- no lo que dice la base de datos. Es la única forma
+    de detectar un huérfano (contenedor sin fila en `Instance`) o una
+    fila fantasma (instancia sin contenedor real): comparando esto
+    contra `Instance.objects.all()` en la vista que lo expone
+    (ver `views.live_instances_view`, panel oculto).
+    """
+    response = _check(
+        _session().get(f"{BASE_URL}/containers/json", params={"all": "true"}),
+        (200,),
+    )
+    contenedores = []
+    for c in response.json():
+        if not c.get("Image", "").startswith("ctf-reto-"):
+            continue
+        redes = c.get("NetworkSettings", {}).get("Networks", {})
+        red = next(iter(redes.items()), (None, {}))
+        contenedores.append(
+            {
+                "container_id": c["Id"],
+                "name": (c.get("Names") or ["/?"])[0].lstrip("/"),
+                "image": c.get("Image"),
+                "state": c.get("State"),
+                "status": c.get("Status"),
+                "created": c.get("Created"),
+                "network_name": red[0],
+                "network_id": red[1].get("NetworkID"),
+            }
+        )
+    return contenedores
+
+
 # --- Exec + hijack -----------------------------------------------------
 
 
