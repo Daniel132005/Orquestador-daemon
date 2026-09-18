@@ -373,6 +373,19 @@ const NOMBRE_DIFICULTAD = {
   dificil: "Difícil",
 };
 
+const ICONO_CATEGORIA = {
+  A01: "🔓",
+  A02: "🔑",
+  A03: "💉",
+  A04: "📐",
+  A05: "⚙️",
+  A06: "📦",
+  A07: "🪪",
+  A08: "🧬",
+  A09: "📜",
+  A10: "🌐",
+};
+
 function agruparPorCategoria(retos) {
   const grupos = new Map();
   retos.forEach((reto) => {
@@ -383,11 +396,12 @@ function agruparPorCategoria(retos) {
   return Array.from(grupos.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
-function crearTarjetaReto(reto) {
+function crearTarjetaReto(reto, indice = 0) {
   const label = document.createElement("label");
-  label.className = "challenge-card";
+  label.className = `challenge-card is-${reto.difficulty}`;
   if (reto.solved) label.classList.add("is-solved");
   label.dataset.slug = reto.slug;
+  label.style.animationDelay = `${Math.min(indice, 14) * 30}ms`;
 
   const input = document.createElement("input");
   input.type = "radio";
@@ -432,13 +446,16 @@ function renderChallengePicker(disponibles) {
     return;
   }
 
+  let indiceTarjeta = 0;
   agruparPorCategoria(disponibles).forEach((grupo) => {
     const seccion = document.createElement("div");
     seccion.className = "category-group";
 
     const head = document.createElement("div");
     head.className = "category-head";
+    const prefijo = grupo.codigo.split(":")[0];
     head.innerHTML = `
+      <span class="category-icon">${ICONO_CATEGORIA[prefijo] || "🛡"}</span>
       <span class="category-code">${grupo.codigo}</span>
       <span class="category-name">${grupo.nombre}</span>
       <span class="category-count">${grupo.retos.length} reto${grupo.retos.length === 1 ? "" : "s"}</span>
@@ -447,7 +464,7 @@ function renderChallengePicker(disponibles) {
 
     const lista = document.createElement("div");
     lista.className = "category-cards";
-    grupo.retos.forEach((reto) => lista.appendChild(crearTarjetaReto(reto)));
+    grupo.retos.forEach((reto) => lista.appendChild(crearTarjetaReto(reto, indiceTarjeta++)));
     seccion.appendChild(lista);
 
     el.picker.appendChild(seccion);
@@ -461,16 +478,35 @@ function retosFiltrados() {
   return todosLosRetos.filter((reto) => reto.difficulty === filtroDificultad);
 }
 
+function moverIndicadorFiltro(btn) {
+  const indicador = document.getElementById("filter-indicator");
+  const contenedor = document.getElementById("difficulty-filter");
+  if (!indicador || !contenedor || !btn) return;
+  const rectContenedor = contenedor.getBoundingClientRect();
+  const rectBtn = btn.getBoundingClientRect();
+  indicador.style.left = `${rectBtn.left - rectContenedor.left}px`;
+  indicador.style.width = `${rectBtn.width}px`;
+}
+
 function aplicarFiltro(dificultad) {
   filtroDificultad = dificultad;
+  let btnActivo = null;
   document.querySelectorAll(".difficulty-filter-btn").forEach((btn) => {
-    btn.classList.toggle("is-active", btn.dataset.difficulty === dificultad);
+    const activo = btn.dataset.difficulty === dificultad;
+    btn.classList.toggle("is-active", activo);
+    if (activo) btnActivo = btn;
   });
+  moverIndicadorFiltro(btnActivo);
   renderChallengePicker(retosFiltrados());
 }
 
 document.querySelectorAll(".difficulty-filter-btn").forEach((btn) => {
   btn.addEventListener("click", () => aplicarFiltro(btn.dataset.difficulty));
+});
+
+moverIndicadorFiltro(document.querySelector(".difficulty-filter-btn.is-active"));
+window.addEventListener("resize", () => {
+  moverIndicadorFiltro(document.querySelector(".difficulty-filter-btn.is-active"));
 });
 
 async function cargarRetos() {
