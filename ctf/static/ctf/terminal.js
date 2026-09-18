@@ -15,6 +15,7 @@ const API = {
   start: "/api/instance/start/",
   stop: "/api/instance/stop/",
   challenges: "/api/challenges/",
+  submitFlag: "/api/challenges/submit/",
 };
 
 const el = {
@@ -38,9 +39,30 @@ const el = {
   timeout: document.getElementById("info-timeout"),
   maxLifetime: document.getElementById("info-max-lifetime"),
   challenge: document.getElementById("info-challenge"),
-  challengeHint: document.getElementById("info-challenge-hint"),
   picker: document.getElementById("challenge-picker"),
   pickerNote: document.getElementById("challenge-picker-note"),
+  briefing: document.getElementById("challenge-briefing"),
+  briefingObjective: document.getElementById("briefing-objective"),
+  briefingFirstStep: document.getElementById("briefing-first-step"),
+  briefingExpected: document.getElementById("briefing-expected"),
+  briefingCopy: document.getElementById("briefing-copy"),
+  infoBriefing: document.getElementById("info-briefing"),
+  infoBriefingObjective: document.getElementById("info-briefing-objective"),
+  infoBriefingFirstStep: document.getElementById("info-briefing-first-step"),
+  infoBriefingExpected: document.getElementById("info-briefing-expected"),
+  infoBriefingCopy: document.getElementById("info-briefing-copy"),
+  xpDisplay: document.getElementById("user-xp-display"),
+  flagBar: document.getElementById("flag-bar"),
+  flagForm: document.getElementById("flag-form"),
+  flagInput: document.getElementById("flag-input"),
+  flagSubmitBtn: document.getElementById("btn-submit-flag"),
+  flagStatusBadge: document.getElementById("flag-status-badge"),
+  flagFeedback: document.getElementById("flag-feedback"),
+  victoryModal: document.getElementById("victory-modal"),
+  victoryChallengeName: document.getElementById("victory-challenge-name"),
+  victoryXpGain: document.getElementById("victory-xp-gain"),
+  victoryMessage: document.getElementById("victory-message"),
+  victoryCloseBtn: document.getElementById("btn-victory-close"),
 };
 
 let socket = null;
@@ -185,14 +207,77 @@ function renderInfo(status) {
   el.timeout.textContent = formatTimeout(status.inactivity_timeout_seconds);
   el.maxLifetime.textContent = formatTimeout(status.max_lifetime_seconds);
 
+  if (status.user_xp !== undefined && el.xpDisplay) {
+    el.xpDisplay.textContent = status.user_xp;
+  }
+
+  if (el.flagBar) {
+    el.flagBar.hidden = !status.active;
+    if (status.active) {
+      if (status.challenge_solved) {
+        el.flagStatusBadge.textContent = "✓ Resuelto";
+        el.flagStatusBadge.className = "flag-bar-status is-solved";
+      } else {
+        el.flagStatusBadge.textContent = "Reto en curso";
+        el.flagStatusBadge.className = "flag-bar-status";
+      }
+    }
+  }
+
   if (status.challenge) {
     const dificultad = NOMBRE_DIFICULTAD[status.challenge.difficulty] || status.challenge.difficulty;
-    el.challenge.textContent = `${status.challenge.name} (${status.challenge.owasp}) — ${dificultad}`;
-    el.challengeHint.textContent = status.challenge.description || "";
+    const resueltoTag = status.challenge.solved ? " — ✓ Resuelto" : "";
+    el.challenge.textContent = `${status.challenge.name} (${status.challenge.owasp}) — ${dificultad}${resueltoTag}`;
+    fillBriefing(
+      { root: el.infoBriefing, objective: el.infoBriefingObjective, firstStep: el.infoBriefingFirstStep, expected: el.infoBriefingExpected },
+      status.challenge
+    );
   } else {
     el.challenge.textContent = "—";
-    el.challengeHint.textContent = "";
+    fillBriefing(
+      { root: el.infoBriefing, objective: el.infoBriefingObjective, firstStep: el.infoBriefingFirstStep, expected: el.infoBriefingExpected },
+      null
+    );
   }
+}
+
+function fillBriefing(target, reto) {
+  if (!reto || !reto.objective) {
+    target.root.hidden = true;
+    return;
+  }
+  target.objective.textContent = reto.objective;
+  target.firstStep.textContent = reto.first_step;
+  target.expected.textContent = reto.expected_result;
+  target.root.hidden = false;
+}
+
+function wireCopyButton(button, codeEl) {
+  if (!button) return;
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(codeEl.textContent);
+      button.textContent = "Copiado";
+      button.classList.add("is-copied");
+      setTimeout(() => {
+        button.textContent = "Copiar";
+        button.classList.remove("is-copied");
+      }, 1500);
+    } catch {
+      setStatus("El navegador bloqueó el acceso al portapapeles", "warn");
+    }
+  });
+}
+
+wireCopyButton(el.briefingCopy, el.briefingFirstStep);
+wireCopyButton(el.infoBriefingCopy, el.infoBriefingFirstStep);
+
+function mostrarBriefingSeleccionado() {
+  const reto = todosLosRetos.find((r) => r.slug === selectedChallenge);
+  fillBriefing(
+    { root: el.briefing, objective: el.briefingObjective, firstStep: el.briefingFirstStep, expected: el.briefingExpected },
+    reto || null
+  );
 }
 
 const NOMBRE_DIFICULTAD = {
@@ -205,11 +290,15 @@ function renderChallengePicker(disponibles) {
   el.picker.innerHTML = "";
   if (disponibles.length === 0) {
     el.picker.innerHTML = '<p class="challenge-picker-empty">Sin retos en esta dificultad.</p>';
+    mostrarBriefingSeleccionado();
     return;
   }
   disponibles.forEach((reto) => {
     const label = document.createElement("label");
     label.className = "challenge-card";
+    if (reto.solved) {
+      label.classList.add("is-solved");
+    }
     label.dataset.slug = reto.slug;
 
     const input = document.createElement("input");
@@ -225,6 +314,8 @@ function renderChallengePicker(disponibles) {
         <span class="challenge-card-name">${reto.name}</span>
         <span class="challenge-card-owasp">${reto.owasp}</span>
         <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
+        <span class="xp-tag">+${reto.xp || 100} XP</span>
+        ${reto.solved ? '<span class="solved-tag">✓ Resuelto</span>' : ''}
       </div>
       <p class="challenge-card-desc">${reto.description}</p>
     `;
@@ -238,10 +329,12 @@ function renderChallengePicker(disponibles) {
       el.picker
         .querySelectorAll(".challenge-card")
         .forEach((card) => card.classList.toggle("is-selected", card.dataset.slug === selectedChallenge));
+      mostrarBriefingSeleccionado();
     });
 
     el.picker.appendChild(label);
   });
+  mostrarBriefingSeleccionado();
 }
 
 function retosFiltrados() {
@@ -403,6 +496,55 @@ async function refresh() {
   el.stop.disabled = !status.active;
   setLink(true);
   return status;
+}
+
+if (el.flagForm) {
+  el.flagForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const flag = el.flagInput.value.trim();
+    if (!flag) return;
+
+    el.flagSubmitBtn.disabled = true;
+    el.flagFeedback.hidden = true;
+    el.flagFeedback.className = "flag-feedback";
+
+    try {
+      const res = await callApi(API.submitFlag, "POST", { flag });
+      if (res.success) {
+        el.flagFeedback.textContent = res.message;
+        el.flagFeedback.className = "flag-feedback is-success";
+        el.flagFeedback.hidden = false;
+        el.flagInput.value = "";
+
+        if (res.total_xp !== undefined && el.xpDisplay) {
+          el.xpDisplay.textContent = res.total_xp;
+        }
+
+        el.flagStatusBadge.textContent = "✓ Resuelto";
+        el.flagStatusBadge.className = "flag-bar-status is-solved";
+
+        el.victoryChallengeName.textContent = res.challenge_name || "Reto Completado";
+        el.victoryXpGain.textContent = res.newly_solved ? `+${res.xp_awarded} XP` : "✓ Ya Resuelto";
+        el.victoryMessage.textContent = res.message;
+        el.victoryModal.hidden = false;
+
+        await cargarRetos();
+        await refresh();
+      }
+    } catch (err) {
+      el.flagFeedback.textContent = err.message || "Bandera incorrecta";
+      el.flagFeedback.className = "flag-feedback is-error";
+      el.flagFeedback.hidden = false;
+    } finally {
+      el.flagSubmitBtn.disabled = false;
+    }
+  });
+}
+
+if (el.victoryCloseBtn) {
+  el.victoryCloseBtn.addEventListener("click", () => {
+    el.victoryModal.hidden = true;
+  });
 }
 
 (async function init() {

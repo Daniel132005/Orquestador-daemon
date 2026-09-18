@@ -657,6 +657,100 @@ body {
   letter-spacing: 0;
 }
 
+/* ---------- Guía del reto (objetivo / primer paso / qué esperar) ---------- */
+
+.challenge-briefing {
+  width: min(820px, 92vw);
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  text-align: left;
+  display: grid;
+  gap: 10px;
+}
+
+.challenge-briefing[hidden] {
+  display: none;
+}
+
+.briefing-row {
+  display: grid;
+  gap: 3px;
+}
+
+.briefing-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.briefing-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.briefing-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.briefing-code code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  color: var(--green-bright);
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.btn-copy {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.btn-copy:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-copy.is-copied {
+  border-color: var(--green-line);
+  color: var(--green);
+}
+
+/* En el panel lateral la guía es más angosta y sin fondo propio, para
+   no repetir el mismo recuadro dos veces en la misma pantalla. */
+#info-briefing {
+  width: auto;
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--panel-3);
+}
+
 .challenge-card {
   display: flex;
   align-items: flex-start;
@@ -843,6 +937,292 @@ body {
 .side-note strong {
   color: var(--text);
   font-weight: 500;
+}
+
+/* ---------- XP Chip & Insignias ---------- */
+
+.xp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #ffca45;
+  background: rgba(245, 181, 68, 0.08);
+  border: 1px solid rgba(245, 181, 68, 0.25);
+  border-radius: 999px;
+}
+
+.xp-chip svg {
+  color: #ffca45;
+}
+
+.xp-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #ffca45;
+  background: rgba(245, 181, 68, 0.12);
+  border: 1px solid rgba(245, 181, 68, 0.28);
+  border-radius: 4px;
+}
+
+.solved-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid rgba(62, 240, 165, 0.35);
+  border-radius: 4px;
+}
+
+.challenge-card.is-solved {
+  border-color: rgba(62, 240, 165, 0.3);
+  background: rgba(62, 240, 165, 0.03);
+}
+
+.challenge-card.is-solved:hover {
+  border-color: rgba(62, 240, 165, 0.5);
+}
+
+/* ---------- Barra de Entrega de Bandera (Flag Bar) ---------- */
+
+.flag-bar {
+  flex: none;
+  padding: 12px 14px;
+  background: var(--panel-2);
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flag-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.flag-bar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.flag-bar-title svg {
+  color: var(--green);
+}
+
+.flag-bar-status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--border-soft);
+}
+
+.flag-bar-status.is-solved {
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid rgba(62, 240, 165, 0.3);
+}
+
+.flag-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.flag-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.flag-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-soft), 0 0 12px rgba(62, 240, 165, 0.15);
+}
+
+.flag-input::placeholder {
+  color: var(--muted-dim);
+}
+
+.btn-submit-flag {
+  flex: none;
+  height: 36px;
+  padding: 0 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.flag-feedback {
+  font-size: 11.5px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.flag-feedback.is-success {
+  color: var(--green);
+  background: rgba(62, 240, 165, 0.1);
+  border: 1px solid rgba(62, 240, 165, 0.3);
+}
+
+.flag-feedback.is-error {
+  color: #ff6b7a;
+  background: rgba(255, 107, 122, 0.1);
+  border: 1px solid rgba(255, 107, 122, 0.3);
+}
+
+/* ---------- Modal de Celebración de Victoria ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px 24px;
+  background: #090d0b;
+  border: 1px solid rgba(62, 240, 165, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(62, 240, 165, 0.15), 0 20px 40px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  overflow: hidden;
+  animation: modalCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalCardPop {
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(62, 240, 165, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: rgba(62, 240, 165, 0.1);
+  border: 1px solid rgba(62, 240, 165, 0.3);
+  box-shadow: 0 0 20px rgba(62, 240, 165, 0.2);
+}
+
+.modal-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(62, 240, 165, 0.4);
+}
+
+.modal-subtitle {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.modal-xp-badge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 24px;
+  margin-bottom: 18px;
+  background: rgba(245, 181, 68, 0.1);
+  border: 1px solid rgba(245, 181, 68, 0.3);
+  border-radius: 8px;
+}
+
+.modal-xp-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #f5b544;
+}
+
+.modal-xp-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #ffca45;
+  text-shadow: 0 0 12px rgba(245, 181, 68, 0.4);
+}
+
+.modal-desc {
+  margin: 0 0 22px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.modal-actions .btn {
+  min-width: 140px;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 @media (max-width: 880px) {

@@ -18,6 +18,7 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 7 — Vida máxima absoluta y pulido de interfaz](docs/dia-7-vida-maxima-y-demo.md)
 - [Día 8 — Retos OWASP seleccionables](docs/dia-8-retos-owasp.md)
 - [Día 9 — Los diez retos OWASP, por dificultad](docs/dia-9-owasp-top-10-completo.md)
+- [Día 10 — Guía real por reto (objetivo, primer paso, qué esperar)](docs/dia-10-guia-de-reto.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 

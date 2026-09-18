@@ -25,3 +25,26 @@ class Instance(models.Model):
 
     def __str__(self) -> str:
         return f"Instance(user={self.user_id}, container={self.container_id[:12]})"
+
+
+class SolvedChallenge(models.Model):
+    """
+    Registro persistente de retos completados y XP ganado por usuario.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="solved_challenges",
+    )
+    challenge_slug = models.CharField(max_length=64)
+    solved_at = models.DateTimeField(auto_now_add=True)
+    xp_awarded = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("user", "challenge_slug")
+        ordering = ["-solved_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.challenge_slug} (+{self.xp_awarded} XP)"
+

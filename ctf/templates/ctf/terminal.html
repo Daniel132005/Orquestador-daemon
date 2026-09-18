@@ -28,6 +28,16 @@
       <span class="topbar-name">ROOT_LABS<span class="sep">//</span>CTF</span>
     </div>
     <div class="topbar-right">
+      <span class="xp-chip" title="Puntos de experiencia acumulados">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path d="M10 14.66V17c0 .55-.45 1-1 1H7.5c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h9c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H15c-.55 0-1-.45-1-1v-2.34"></path>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+        </svg>
+        <span id="user-xp-display">0</span> XP
+      </span>
       <span class="user-chip">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -66,7 +76,41 @@
             <button type="button" class="difficulty-filter-btn" data-difficulty="dificil">Difícil</button>
           </div>
           <div class="challenge-picker" id="challenge-picker"></div>
+          <div class="challenge-briefing" id="challenge-briefing" hidden>
+            <div class="briefing-row">
+              <span class="briefing-label">Objetivo</span>
+              <p class="briefing-text" id="briefing-objective"></p>
+            </div>
+            <div class="briefing-row">
+              <span class="briefing-label">Primer paso</span>
+              <div class="briefing-code">
+                <code id="briefing-first-step"></code>
+                <button type="button" class="btn-copy" id="briefing-copy" title="Copiar comando">Copiar</button>
+              </div>
+            </div>
+            <div class="briefing-row">
+              <span class="briefing-label">Qué vas a ver</span>
+              <p class="briefing-text" id="briefing-expected"></p>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="flag-bar" id="flag-bar" hidden>
+        <div class="flag-bar-header">
+          <span class="flag-bar-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            Validar Bandera
+          </span>
+          <span class="flag-bar-status" id="flag-status-badge">Reto en curso</span>
+        </div>
+        <form class="flag-form" id="flag-form" autocomplete="off">
+          <input type="text" id="flag-input" class="flag-input" placeholder="Ingresá la bandera FLAG{...}" spellcheck="false" required />
+          <button type="submit" class="btn btn-primary btn-submit-flag" id="btn-submit-flag">Validar</button>
+        </form>
+        <div class="flag-feedback" id="flag-feedback" hidden></div>
       </div>
     </section>
 
@@ -80,7 +124,23 @@
           <div class="kv"><dt>Red</dt><dd id="info-network">—</dd></div>
           <div class="kv"><dt>Creada</dt><dd id="info-created">—</dd></div>
         </dl>
-        <p class="side-note" id="info-challenge-hint"></p>
+        <div class="challenge-briefing" id="info-briefing" hidden>
+          <div class="briefing-row">
+            <span class="briefing-label">Objetivo</span>
+            <p class="briefing-text" id="info-briefing-objective"></p>
+          </div>
+          <div class="briefing-row">
+            <span class="briefing-label">Primer paso</span>
+            <div class="briefing-code">
+              <code id="info-briefing-first-step"></code>
+              <button type="button" class="btn-copy" id="info-briefing-copy" title="Copiar comando">Copiar</button>
+            </div>
+          </div>
+          <div class="briefing-row">
+            <span class="briefing-label">Qué vas a ver</span>
+            <p class="briefing-text" id="info-briefing-expected"></p>
+          </div>
+        </div>
       </div>
 
       <div class="side-section">
@@ -116,6 +176,31 @@
   <div class="rail rail-bottom">
     <span class="rail-item"><span class="rail-dot is-ok"></span>Aislamiento: red interna + cgroups</span>
     <span class="rail-item" id="session-info">—</span>
+  </div>
+
+  <div class="modal-backdrop" id="victory-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-glow"></div>
+      <div class="modal-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3ef0a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path d="M10 14.66V17c0 .55-.45 1-1 1H7.5c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h9c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H15c-.55 0-1-.45-1-1v-2.34"></path>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+        </svg>
+      </div>
+      <h2 class="modal-title">¡VULNERABILIDAD ENCONTRADA!</h2>
+      <p class="modal-subtitle" id="victory-challenge-name">Reto Resuelto</p>
+      <div class="modal-xp-badge">
+        <span class="modal-xp-label">EXPERIENCIA OBTENIDA</span>
+        <span class="modal-xp-value" id="victory-xp-gain">+100 XP</span>
+      </div>
+      <p class="modal-desc" id="victory-message">Has explotado la vulnerabilidad con éxito y capturado la bandera legítima.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btn-victory-close">Continuar</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>

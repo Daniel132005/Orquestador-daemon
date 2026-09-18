@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
 from . import challenges, docker_client
-from .models import Instance
+from .models import Instance, SolvedChallenge
 
 
 @login_required
@@ -18,23 +18,43 @@ def terminal_page(request):
     return render(request, "ctf/terminal.html")
 
 
+def _challenge_summary(reto: dict) -> dict:
+    """Campos de un reto que expone la API: catálogo e instancia activa
+    comparten esta forma, para que el frontend no tenga que distinguir."""
+    return {
+        "slug": reto["slug"],
+        "name": reto["name"],
+        "owasp": reto["owasp"],
+        "difficulty": reto["difficulty"],
+        "xp": reto.get("xp", 100),
+        "description": reto["description"],
+        "objective": reto["objective"],
+        "first_step": reto["first_step"],
+        "expected_result": reto["expected_result"],
+    }
+
+
 @login_required
 @require_GET
 def challenge_list(request):
     """Catálogo de retos que el frontend ofrece para elegir antes de desplegar."""
+    solved_slugs = set(
+        SolvedChallenge.objects.filter(user=request.user).values_list("challenge_slug", flat=True)
+    )
+    user_xp = sum(
+        SolvedChallenge.objects.filter(user=request.user).values_list("xp_awarded", flat=True)
+    )
     return JsonResponse(
         {
             "challenges": [
                 {
-                    "slug": c["slug"],
-                    "name": c["name"],
-                    "owasp": c["owasp"],
-                    "difficulty": c["difficulty"],
-                    "description": c["description"],
+                    **_challenge_summary(c),
+                    "solved": c["slug"] in solved_slugs,
                 }
                 for c in challenges.list_challenges()
             ],
             "default": challenges.DEFAULT_CHALLENGE,
+            "user_xp": user_xp,
         }
     )
 
@@ -49,6 +69,12 @@ def instance_status(request):
     """
     instance = Instance.objects.filter(user=request.user).first()
     reto = challenges.get_challenge(instance.challenge) if instance else None
+    solved_slugs = set(
+        SolvedChallenge.objects.filter(user=request.user).values_list("challenge_slug", flat=True)
+    )
+    user_xp = sum(
+        SolvedChallenge.objects.filter(user=request.user).values_list("xp_awarded", flat=True)
+    )
     payload = {
         "active": instance is not None,
         "container_id": instance.container_id if instance else None,
@@ -56,15 +82,14 @@ def instance_status(request):
         "created_at": instance.created_at.isoformat() if instance else None,
         "challenge": (
             {
-                "slug": instance.challenge,
-                "name": reto["name"] if reto else instance.challenge,
-                "owasp": reto["owasp"] if reto else None,
-                "difficulty": reto["difficulty"] if reto else None,
-                "description": reto["description"] if reto else None,
+                **_challenge_summary({**reto, "slug": instance.challenge}),
+                "solved": instance.challenge in solved_slugs,
             }
-            if instance
-            else None
+            if instance and reto
+            else ({"slug": instance.challenge, "name": instance.challenge, "solved": False} if instance else None)
         ),
+        "user_xp": user_xp,
+        "challenge_solved": (instance.challenge in solved_slugs) if instance else False,
         "limits": {
             "memory_mb": settings.CTF_MEMORY_LIMIT_BYTES // (1024 * 1024),
             "cpus": settings.CTF_NANO_CPUS / 1_000_000_000,
@@ -74,6 +99,80 @@ def instance_status(request):
         "max_lifetime_seconds": settings.INSTANCE_MAX_LIFETIME_SECONDS,
     }
     return JsonResponse(payload)
+
+
+@login_required
+@require_POST
+def submit_flag(request):
+    """
+    POST /api/challenges/submit/
+    Body: {"flag": "...", "slug": "..."} (si no viene slug, usa la de la instancia activa).
+    """
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    submitted_flag = data.get("flag", "").strip()
+    slug = data.get("slug", "").strip()
+
+    if not submitted_flag:
+        return JsonResponse({"error": "La bandera no puede estar vacía"}, status=400)
+
+    if not slug:
+        instance = Instance.objects.filter(user=request.user).first()
+        if instance:
+            slug = instance.challenge
+
+    if not slug:
+        return JsonResponse({"error": "No se especificó qué reto se está resolviendo"}, status=400)
+
+    reto = challenges.get_challenge(slug)
+    if not reto:
+        return JsonResponse({"error": f"Reto '{slug}' no encontrado"}, status=404)
+
+    is_valid, xp_to_award = challenges.validate_flag(slug, submitted_flag)
+    if not is_valid:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Bandera incorrecta. ¡Seguí investigando!",
+            },
+            status=400,
+        )
+
+    already_solved = SolvedChallenge.objects.filter(user=request.user, challenge_slug=slug).exists()
+    if not already_solved:
+        SolvedChallenge.objects.create(
+            user=request.user,
+            challenge_slug=slug,
+            xp_awarded=xp_to_award,
+        )
+        xp_awarded = xp_to_award
+        newly_solved = True
+    else:
+        xp_awarded = 0
+        newly_solved = False
+
+    total_xp = sum(
+        SolvedChallenge.objects.filter(user=request.user).values_list("xp_awarded", flat=True)
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "newly_solved": newly_solved,
+            "xp_awarded": xp_awarded,
+            "total_xp": total_xp,
+            "challenge_name": reto["name"],
+            "challenge_slug": slug,
+            "message": (
+                f"¡Vulnerabilidad encontrada! Has resuelto {reto['name']}. Sumaste +{xp_awarded} XP."
+                if newly_solved
+                else f"¡Bandera correcta! Ya habías completado este reto previamente."
+            ),
+        }
+    )
 
 
 @login_required
