@@ -16,6 +16,7 @@ const API = {
   stop: "/api/instance/stop/",
   challenges: "/api/challenges/",
   submitFlag: "/api/challenges/submit/",
+  platformSettings: "/api/platform-settings/",
 };
 
 const el = {
@@ -39,6 +40,7 @@ const el = {
   timeout: document.getElementById("info-timeout"),
   maxLifetime: document.getElementById("info-max-lifetime"),
   challenge: document.getElementById("info-challenge"),
+  image: document.getElementById("info-image"),
   picker: document.getElementById("challenge-picker"),
   pickerNote: document.getElementById("challenge-picker-note"),
   briefing: document.getElementById("challenge-briefing"),
@@ -46,11 +48,13 @@ const el = {
   briefingFirstStep: document.getElementById("briefing-first-step"),
   briefingExpected: document.getElementById("briefing-expected"),
   briefingCopy: document.getElementById("briefing-copy"),
-  infoBriefing: document.getElementById("info-briefing"),
-  infoBriefingObjective: document.getElementById("info-briefing-objective"),
-  infoBriefingFirstStep: document.getElementById("info-briefing-first-step"),
-  infoBriefingExpected: document.getElementById("info-briefing-expected"),
-  infoBriefingCopy: document.getElementById("info-briefing-copy"),
+  guideBar: document.getElementById("guide-bar"),
+  guideToggle: document.getElementById("guide-toggle"),
+  guideBody: document.getElementById("guide-body"),
+  guideObjective: document.getElementById("guide-objective"),
+  guideFirstStep: document.getElementById("guide-first-step"),
+  guideExpected: document.getElementById("guide-expected"),
+  guideCopy: document.getElementById("guide-copy"),
   xpDisplay: document.getElementById("user-xp-display"),
   flagBar: document.getElementById("flag-bar"),
   flagForm: document.getElementById("flag-form"),
@@ -63,6 +67,16 @@ const el = {
   victoryXpGain: document.getElementById("victory-xp-gain"),
   victoryMessage: document.getElementById("victory-message"),
   victoryCloseBtn: document.getElementById("btn-victory-close"),
+  destroyedToast: document.getElementById("destroyed-toast"),
+  destroyedToastText: document.getElementById("destroyed-toast-text"),
+  destroyedToastClose: document.getElementById("destroyed-toast-close"),
+  userChip: document.getElementById("user-chip"),
+  settingsModal: document.getElementById("settings-modal"),
+  settingsInactivity: document.getElementById("settings-inactivity"),
+  settingsLifetime: document.getElementById("settings-lifetime"),
+  settingsFeedback: document.getElementById("settings-feedback"),
+  settingsSaveBtn: document.getElementById("btn-settings-save"),
+  settingsCancelBtn: document.getElementById("btn-settings-cancel"),
 };
 
 let socket = null;
@@ -117,18 +131,44 @@ term.attachCustomKeyEventHandler((evento) => {
     (evento.ctrlKey || evento.metaKey) &&
     evento.key.toLowerCase() === "v";
 
-  if (!esPegar) return true;
+  if (esPegar) {
+    // Sin esto, el navegador igual dispara su evento nativo de "paste"
+    // sobre el textarea interno de xterm, que tiene SU PROPIO manejador
+    // de pegado -- y el texto termina pegado dos veces, una por acá y
+    // otra por ese.
+    evento.preventDefault();
+    navigator.clipboard
+      .readText()
+      .then((texto) => {
+        if (texto) term.paste(texto);
+      })
+      .catch(() => {
+        setStatus("El navegador bloqueó el acceso al portapapeles", "warn");
+      });
+    return false; // no reenviar la tecla al shell
+  }
 
-  navigator.clipboard
-    .readText()
-    .then((texto) => {
-      if (texto) term.paste(texto);
-    })
-    .catch(() => {
-      setStatus("El navegador bloqueó el acceso al portapapeles", "warn");
-    });
+  /*
+   * Ctrl+C es ambiguo en cualquier terminal: con texto seleccionado casi
+   * todo el mundo espera que copie, pero sin selección tiene que seguir
+   * siendo la interrupción normal (Ctrl+C corta el proceso en curso).
+   * Se distingue por si hay algo seleccionado en este momento.
+   */
+  const esCopiar =
+    evento.type === "keydown" &&
+    (evento.ctrlKey || evento.metaKey) &&
+    evento.key.toLowerCase() === "c" &&
+    term.hasSelection();
 
-  return false; // no reenviar la tecla al shell
+  if (esCopiar) {
+    navigator.clipboard
+      .writeText(term.getSelection())
+      .then(() => setStatus("Copiado al portapapeles", "ok"))
+      .catch(() => setStatus("El navegador bloqueó el acceso al portapapeles", "warn"));
+    return false; // no mandar SIGINT: hay selección, la intención es copiar
+  }
+
+  return true;
 });
 
 function getCookie(name) {
@@ -228,14 +268,26 @@ function renderInfo(status) {
     const dificultad = NOMBRE_DIFICULTAD[status.challenge.difficulty] || status.challenge.difficulty;
     const resueltoTag = status.challenge.solved ? " — ✓ Resuelto" : "";
     el.challenge.textContent = `${status.challenge.name} (${status.challenge.owasp}) — ${dificultad}${resueltoTag}`;
+    if (el.image) el.image.textContent = status.challenge.image || "—";
     fillBriefing(
-      { root: el.infoBriefing, objective: el.infoBriefingObjective, firstStep: el.infoBriefingFirstStep, expected: el.infoBriefingExpected },
+      { root: el.guideBar, objective: el.guideObjective, firstStep: el.guideFirstStep, expected: el.guideExpected },
       status.challenge
     );
+    // Si ya venía resuelto de antes (no recién ahora), no hace falta
+    // mostrar la guía ocupando espacio -- se colapsa una sola vez, al
+    // primer estado que se recibe, sin pelearle a un toggle manual
+    // posterior.
+    if (status.challenge.solved && !guideAutoCollapseHecho && el.guideToggle) {
+      guideAutoCollapseHecho = true;
+      guideCollapsed = true;
+      el.guideBody.hidden = true;
+      el.guideToggle.classList.add("is-collapsed");
+    }
   } else {
     el.challenge.textContent = "—";
+    if (el.image) el.image.textContent = "—";
     fillBriefing(
-      { root: el.infoBriefing, objective: el.infoBriefingObjective, firstStep: el.infoBriefingFirstStep, expected: el.infoBriefingExpected },
+      { root: el.guideBar, objective: el.guideObjective, firstStep: el.guideFirstStep, expected: el.guideExpected },
       null
     );
   }
@@ -270,7 +322,17 @@ function wireCopyButton(button, codeEl) {
 }
 
 wireCopyButton(el.briefingCopy, el.briefingFirstStep);
-wireCopyButton(el.infoBriefingCopy, el.infoBriefingFirstStep);
+wireCopyButton(el.guideCopy, el.guideFirstStep);
+
+let guideCollapsed = false;
+let guideAutoCollapseHecho = false;
+if (el.guideToggle) {
+  el.guideToggle.addEventListener("click", () => {
+    guideCollapsed = !guideCollapsed;
+    el.guideBody.hidden = guideCollapsed;
+    el.guideToggle.classList.toggle("is-collapsed", guideCollapsed);
+  });
+}
 
 function mostrarBriefingSeleccionado() {
   const reto = todosLosRetos.find((r) => r.slug === selectedChallenge);
@@ -286,6 +348,56 @@ const NOMBRE_DIFICULTAD = {
   dificil: "Difícil",
 };
 
+function agruparPorCategoria(retos) {
+  const grupos = new Map();
+  retos.forEach((reto) => {
+    const [codigo, nombre] = reto.owasp.split(" - ");
+    if (!grupos.has(codigo)) grupos.set(codigo, { codigo, nombre, retos: [] });
+    grupos.get(codigo).retos.push(reto);
+  });
+  return Array.from(grupos.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
+}
+
+function crearTarjetaReto(reto) {
+  const label = document.createElement("label");
+  label.className = "challenge-card";
+  if (reto.solved) label.classList.add("is-solved");
+  label.dataset.slug = reto.slug;
+
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = "challenge";
+  input.value = reto.slug;
+  input.checked = reto.slug === selectedChallenge;
+
+  const body = document.createElement("div");
+  body.className = "challenge-card-body";
+  body.innerHTML = `
+    <div class="challenge-card-head">
+      <span class="challenge-card-name">${reto.name}</span>
+      <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
+      <span class="xp-tag">+${reto.xp || 100} XP</span>
+      ${reto.solved ? '<span class="solved-tag">✓ Resuelto</span>' : ""}
+    </div>
+    <p class="challenge-card-desc">${reto.description}</p>
+    <span class="image-tag" title="Imagen Docker de este reto">${reto.image || ""}</span>
+  `;
+
+  label.appendChild(input);
+  label.appendChild(body);
+  label.classList.toggle("is-selected", input.checked);
+
+  input.addEventListener("change", () => {
+    selectedChallenge = reto.slug;
+    el.picker
+      .querySelectorAll(".challenge-card")
+      .forEach((card) => card.classList.toggle("is-selected", card.dataset.slug === selectedChallenge));
+    mostrarBriefingSeleccionado();
+  });
+
+  return label;
+}
+
 function renderChallengePicker(disponibles) {
   el.picker.innerHTML = "";
   if (disponibles.length === 0) {
@@ -293,47 +405,28 @@ function renderChallengePicker(disponibles) {
     mostrarBriefingSeleccionado();
     return;
   }
-  disponibles.forEach((reto) => {
-    const label = document.createElement("label");
-    label.className = "challenge-card";
-    if (reto.solved) {
-      label.classList.add("is-solved");
-    }
-    label.dataset.slug = reto.slug;
 
-    const input = document.createElement("input");
-    input.type = "radio";
-    input.name = "challenge";
-    input.value = reto.slug;
-    input.checked = reto.slug === selectedChallenge;
+  agruparPorCategoria(disponibles).forEach((grupo) => {
+    const seccion = document.createElement("div");
+    seccion.className = "category-group";
 
-    const body = document.createElement("div");
-    body.className = "challenge-card-body";
-    body.innerHTML = `
-      <div class="challenge-card-head">
-        <span class="challenge-card-name">${reto.name}</span>
-        <span class="challenge-card-owasp">${reto.owasp}</span>
-        <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
-        <span class="xp-tag">+${reto.xp || 100} XP</span>
-        ${reto.solved ? '<span class="solved-tag">✓ Resuelto</span>' : ''}
-      </div>
-      <p class="challenge-card-desc">${reto.description}</p>
+    const head = document.createElement("div");
+    head.className = "category-head";
+    head.innerHTML = `
+      <span class="category-code">${grupo.codigo}</span>
+      <span class="category-name">${grupo.nombre}</span>
+      <span class="category-count">${grupo.retos.length} reto${grupo.retos.length === 1 ? "" : "s"}</span>
     `;
+    seccion.appendChild(head);
 
-    label.appendChild(input);
-    label.appendChild(body);
-    label.classList.toggle("is-selected", input.checked);
+    const lista = document.createElement("div");
+    lista.className = "category-cards";
+    grupo.retos.forEach((reto) => lista.appendChild(crearTarjetaReto(reto)));
+    seccion.appendChild(lista);
 
-    input.addEventListener("change", () => {
-      selectedChallenge = reto.slug;
-      el.picker
-        .querySelectorAll(".challenge-card")
-        .forEach((card) => card.classList.toggle("is-selected", card.dataset.slug === selectedChallenge));
-      mostrarBriefingSeleccionado();
-    });
-
-    el.picker.appendChild(label);
+    el.picker.appendChild(seccion);
   });
+
   mostrarBriefingSeleccionado();
 }
 
@@ -380,6 +473,36 @@ function sendResize() {
   }
 }
 
+function mostrarToastDestruccion() {
+  if (!el.destroyedToast) return;
+
+  // No sabemos con certeza cuál de los dos mecanismos la mató (el
+  // servidor borra la fila sin dejar rastro de "por qué" accesible
+  // desde el frontend), pero se puede estimar: si ya llevaba casi toda
+  // su vida máxima permitida, lo más probable es que la haya matado eso
+  // y no la inactividad.
+  let motivo = "por inactividad o por alcanzar su tiempo máximo de vida";
+  if (ultimoStatusActivo && ultimoStatusActivo.created_at) {
+    const vivaDesde = Date.now() - new Date(ultimoStatusActivo.created_at).getTime();
+    const vidaMaximaMs = (ultimoStatusActivo.max_lifetime_seconds || 0) * 1000;
+    if (vidaMaximaMs > 0 && vivaDesde >= vidaMaximaMs * 0.9) {
+      motivo = "por alcanzar su tiempo máximo de vida";
+    } else {
+      motivo = "por inactividad";
+    }
+  }
+
+  el.destroyedToastText.textContent =
+    `El watchdog la destruyó automáticamente ${motivo}. Desplegá una nueva si la necesitás.`;
+  el.destroyedToast.hidden = false;
+}
+
+if (el.destroyedToastClose) {
+  el.destroyedToastClose.addEventListener("click", () => {
+    el.destroyedToast.hidden = true;
+  });
+}
+
 async function resincronizar() {
   /*
    * La consola se cortó sin que el usuario lo pidiera: o escribió `exit`,
@@ -399,6 +522,7 @@ async function resincronizar() {
         term.reset();
         showTerminal(false);
         setStatus("La instancia ya no existe", null);
+        mostrarToastDestruccion();
         return;
       }
       setStatus("Consola cerrada — recargá para reabrirla", "warn");
@@ -447,6 +571,20 @@ window.addEventListener("resize", () => {
   sendResize();
 });
 
+/*
+ * El tamaño de `.terminal-wrap` no solo cambia con la ventana: también
+ * se achica cuando la barra de bandera crece (ej. al mostrar un mensaje
+ * de error) o cuando se abre/cierra la guía del reto. Sin reajustar el
+ * canvas de xterm en esos casos, queda calculado para un tamaño viejo y
+ * se desborda visualmente sobre lo que esté debajo. El ResizeObserver
+ * cubre cualquier cambio de tamaño, sea la causa que sea.
+ */
+new ResizeObserver(() => {
+  if (!el.empty.hidden) return;
+  fitAddon.fit();
+  sendResize();
+}).observe(el.terminal.parentElement);
+
 el.start.addEventListener("click", async () => {
   if (!selectedChallenge) {
     setStatus("Elegí un reto antes de desplegar", "warn");
@@ -454,6 +592,11 @@ el.start.addEventListener("click", async () => {
   }
   el.start.disabled = true;
   setStatus("Creando contenedor", "warn");
+  // El mensaje de la última bandera validada (de un reto anterior, ya
+  // destruido) no se borraba solo -- quedaba pegado ahí hasta que se
+  // validara una bandera nueva, aunque fuera de otro reto.
+  if (el.flagFeedback) el.flagFeedback.hidden = true;
+  if (el.flagInput) el.flagInput.value = "";
   try {
     await callApi(API.start, "POST", { challenge: selectedChallenge });
     await refresh();
@@ -480,6 +623,8 @@ el.stop.addEventListener("click", async () => {
     term.reset();
     showTerminal(false);
     setStatus("Instancia destruida", null);
+    if (el.flagFeedback) el.flagFeedback.hidden = true;
+    if (el.flagInput) el.flagInput.value = "";
     await refresh();
   } catch (err) {
     setStatus(err.message, "down");
@@ -489,12 +634,15 @@ el.stop.addEventListener("click", async () => {
   }
 });
 
+let ultimoStatusActivo = null;
+
 async function refresh() {
   const status = await callApi(API.status, "GET");
   renderInfo(status);
   el.start.disabled = status.active;
   el.stop.disabled = !status.active;
   setLink(true);
+  if (status.active) ultimoStatusActivo = status;
   return status;
 }
 
@@ -528,6 +676,16 @@ if (el.flagForm) {
         el.victoryMessage.textContent = res.message;
         el.victoryModal.hidden = false;
 
+        // Ya resuelto, la guía deja de hacer falta: se colapsa sola para
+        // devolverle ese espacio a la terminal (el usuario la puede
+        // volver a abrir con el botón ▾ si quiere releerla).
+        if (res.newly_solved && el.guideToggle && !guideCollapsed) {
+          guideAutoCollapseHecho = true;
+          guideCollapsed = true;
+          el.guideBody.hidden = true;
+          el.guideToggle.classList.add("is-collapsed");
+        }
+
         await cargarRetos();
         await refresh();
       }
@@ -547,7 +705,103 @@ if (el.victoryCloseBtn) {
   });
 }
 
+/*
+ * Panel oculto: 5 clicks seguidos (menos de 1.5s entre cada uno) sobre
+ * el propio nombre de usuario abren el ajuste del watchdog. Que esté
+ * escondido es solo para que no cualquiera se tropiece con él por
+ * accidente -- el control real de acceso es el `is_staff` que exige el
+ * backend (`platform_settings_view`); a alguien sin permiso esto ni
+ * siquiera le sirve de nada, el fetch le va a devolver 403.
+ */
+if (el.userChip && el.userChip.dataset.isStaff === "true") {
+  let clicksSeguidos = 0;
+  let ultimoClick = 0;
+
+  el.userChip.addEventListener("click", async () => {
+    const ahora = Date.now();
+    clicksSeguidos = ahora - ultimoClick < 1500 ? clicksSeguidos + 1 : 1;
+    ultimoClick = ahora;
+
+    if (clicksSeguidos < 5) return;
+    clicksSeguidos = 0;
+
+    try {
+      const config = await callApi(API.platformSettings, "GET");
+      el.settingsInactivity.value = Math.round(config.inactivity_timeout_seconds / 60);
+      el.settingsLifetime.value = +(config.max_lifetime_seconds / 3600).toFixed(2);
+      el.settingsFeedback.hidden = true;
+      el.settingsModal.hidden = false;
+    } catch (err) {
+      setStatus(err.message, "warn");
+    }
+  });
+}
+
+if (el.settingsCancelBtn) {
+  el.settingsCancelBtn.addEventListener("click", () => {
+    el.settingsModal.hidden = true;
+  });
+}
+
+document.querySelectorAll(".number-stepper-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = document.getElementById(btn.dataset.target);
+    const paso = Number(btn.dataset.step);
+    const min = Number(input.min) || 0;
+    const actual = Number(input.value) || 0;
+    const nuevo = actual + paso;
+    input.value = nuevo < min ? min : Math.round(nuevo * 100) / 100;
+  });
+});
+
+if (el.settingsSaveBtn) {
+  el.settingsSaveBtn.addEventListener("click", async () => {
+    const minutos = Number(el.settingsInactivity.value);
+    const horas = Number(el.settingsLifetime.value);
+    if (!minutos || !horas || minutos <= 0 || horas <= 0) {
+      el.settingsFeedback.textContent = "Ingresá valores válidos, mayores a 0.";
+      el.settingsFeedback.className = "settings-feedback is-error";
+      el.settingsFeedback.hidden = false;
+      return;
+    }
+
+    el.settingsSaveBtn.disabled = true;
+    try {
+      await callApi(API.platformSettings, "POST", {
+        inactivity_timeout_seconds: Math.round(minutos * 60),
+        max_lifetime_seconds: Math.round(horas * 3600),
+      });
+      el.settingsFeedback.textContent = `Guardado: ${minutos} min de inactividad, ${horas} h de vida máxima.`;
+      el.settingsFeedback.className = "settings-feedback is-success";
+      el.settingsFeedback.hidden = false;
+      await refresh();
+    } catch (err) {
+      el.settingsFeedback.textContent = err.message;
+      el.settingsFeedback.className = "settings-feedback is-error";
+      el.settingsFeedback.hidden = false;
+    } finally {
+      el.settingsSaveBtn.disabled = false;
+    }
+  });
+}
+
+window.addEventListener("pageshow", () => {
+  // Si el navegador restaura la página desde su caché de historial
+  // (bfcache) -- por ejemplo, volviendo con el botón "atrás" después de
+  // cerrar sesión sin haber cerrado antes este modal -- el DOM vuelve
+  // exactamente como quedó, con el modal todavía visible. Se fuerza a
+  // cerrado en cada carga/restauración, sin excepción.
+  if (el.victoryModal) el.victoryModal.hidden = true;
+});
+
+document.addEventListener("keydown", (evento) => {
+  if (evento.key === "Escape" && el.victoryModal && !el.victoryModal.hidden) {
+    el.victoryModal.hidden = true;
+  }
+});
+
 (async function init() {
+  if (el.victoryModal) el.victoryModal.hidden = true;
   renderProtocol();
   renderSessionInfo();
   try {

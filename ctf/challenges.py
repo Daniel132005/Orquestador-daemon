@@ -248,6 +248,7 @@ def list_challenges() -> list[dict]:
             "owasp": datos["owasp"],
             "difficulty": datos["difficulty"],
             "xp": datos.get("xp", XP_VALUES.get(datos["difficulty"], 100)),
+            "image": datos["image"],
             "description": datos["description"],
             "objective": datos["objective"],
             "first_step": datos["first_step"],

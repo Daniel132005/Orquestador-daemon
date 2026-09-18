@@ -9,13 +9,68 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
 from . import challenges, docker_client
-from .models import Instance, SolvedChallenge
+from .models import Instance, PlatformSettings, SolvedChallenge
 
 
 @login_required
 def terminal_page(request):
     """Página con la consola Xterm.js (ver SDD 4.5)."""
     return render(request, "ctf/terminal.html")
+
+
+@login_required
+def platform_settings_view(request):
+    """
+    GET/POST /api/platform-settings/ — panel escondido (5 clicks en el
+    nombre de usuario, ver terminal.js) para ajustar el umbral de
+    inactividad y la vida máxima sin pasar por /admin/.
+
+    Que esté escondido en el frontend es solo para que no cualquiera se
+    tropiece con él por accidente -- el control real de acceso es este
+    chequeo de `is_staff`, van a devolver 403 igual si alguien le pega
+    directo a la URL sin ser staff.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para ver esto"}, status=403)
+
+    if request.method == "GET":
+        config = PlatformSettings.actual()
+        return JsonResponse(
+            {
+                "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
+                "max_lifetime_seconds": config.max_lifetime_seconds,
+            }
+        )
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "JSON inválido"}, status=400)
+
+        try:
+            inactividad = int(data["inactivity_timeout_seconds"])
+            vida_maxima = int(data["max_lifetime_seconds"])
+        except (KeyError, TypeError, ValueError):
+            return JsonResponse({"error": "Faltan campos o no son números"}, status=400)
+
+        if inactividad < 30 or vida_maxima < 30:
+            return JsonResponse(
+                {"error": "Los valores tienen que ser de al menos 30 segundos"}, status=400
+            )
+
+        config = PlatformSettings.actual()
+        config.inactivity_timeout_seconds = inactividad
+        config.max_lifetime_seconds = vida_maxima
+        config.save()
+        return JsonResponse(
+            {
+                "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
+                "max_lifetime_seconds": config.max_lifetime_seconds,
+            }
+        )
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 def _challenge_summary(reto: dict) -> dict:
@@ -27,6 +82,7 @@ def _challenge_summary(reto: dict) -> dict:
         "owasp": reto["owasp"],
         "difficulty": reto["difficulty"],
         "xp": reto.get("xp", 100),
+        "image": reto["image"],
         "description": reto["description"],
         "objective": reto["objective"],
         "first_step": reto["first_step"],
@@ -69,6 +125,7 @@ def instance_status(request):
     """
     instance = Instance.objects.filter(user=request.user).first()
     reto = challenges.get_challenge(instance.challenge) if instance else None
+    config = PlatformSettings.actual()
     solved_slugs = set(
         SolvedChallenge.objects.filter(user=request.user).values_list("challenge_slug", flat=True)
     )
@@ -95,8 +152,8 @@ def instance_status(request):
             "cpus": settings.CTF_NANO_CPUS / 1_000_000_000,
             "pids": settings.CTF_PIDS_LIMIT,
         },
-        "inactivity_timeout_seconds": settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS,
-        "max_lifetime_seconds": settings.INSTANCE_MAX_LIFETIME_SECONDS,
+        "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
+        "max_lifetime_seconds": config.max_lifetime_seconds,
     }
     return JsonResponse(payload)
 

@@ -8,4 +8,5 @@ urlpatterns = [
     path("instance/status/", views.instance_status, name="instance-status"),
     path("instance/start/", views.start_instance, name="instance-start"),
     path("instance/stop/", views.stop_instance, name="instance-stop"),
+    path("platform-settings/", views.platform_settings_view, name="platform-settings"),
 ]

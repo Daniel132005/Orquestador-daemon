@@ -48,3 +48,45 @@ class SolvedChallenge(models.Model):
     def __str__(self) -> str:
         return f"{self.user.username} - {self.challenge_slug} (+{self.xp_awarded} XP)"
 
+
+class PlatformSettings(models.Model):
+    """
+    Configuración editable en caliente desde /admin/, sin tocar
+    variables de entorno ni reiniciar el servidor (ver
+    docs/dia-14-configuracion-en-caliente.md).
+
+    Fila única (singleton): `actual()` siempre trabaja sobre la
+    primera fila, creándola con los valores de `settings.py` como
+    default si todavía no existe ninguna.
+    """
+
+    inactivity_timeout_seconds = models.PositiveIntegerField(
+        default=settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS,
+        help_text=(
+            "Segundos sin actividad en la consola antes de que el "
+            "watchdog destruya la instancia."
+        ),
+    )
+    max_lifetime_seconds = models.PositiveIntegerField(
+        default=settings.INSTANCE_MAX_LIFETIME_SECONDS,
+        help_text=(
+            "Vida máxima absoluta de una instancia, en segundos, "
+            "aunque haya actividad constante."
+        ),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuración de la plataforma"
+        verbose_name_plural = "Configuración de la plataforma"
+
+    def __str__(self) -> str:
+        return "Configuración de la plataforma"
+
+    @classmethod
+    def actual(cls) -> "PlatformSettings":
+        obj = cls.objects.first()
+        if obj is None:
+            obj = cls.objects.create()
+        return obj
+

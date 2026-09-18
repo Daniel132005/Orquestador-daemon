@@ -69,6 +69,7 @@ class CtfConfig(AppConfig):
     def _watchdog_loop():
         from django.conf import settings
 
+        from .models import PlatformSettings
         from .watchdog import sweep_stale_instances
 
         interval = settings.CTF_WATCHDOG_INTERVAL_SECONDS
@@ -79,7 +80,7 @@ class CtfConfig(AppConfig):
 
         logger.info(
             "Watchdog integrado iniciado (umbral=%ss, intervalo=%ss)",
-            settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS,
+            PlatformSettings.actual().inactivity_timeout_seconds,
             interval,
         )
 

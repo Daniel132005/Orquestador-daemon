@@ -10,13 +10,12 @@ copias pudieran divergir.
 import logging
 from datetime import timedelta
 
-from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import Q
 from django.utils import timezone
 
 from . import docker_client
-from .models import Instance
+from .models import Instance, PlatformSettings
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +39,12 @@ def sweep_stale_instances() -> int:
     """
     close_old_connections()
 
+    config = PlatformSettings.actual()
     ahora = timezone.now()
     limite_inactividad = ahora - timedelta(
-        seconds=settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS
+        seconds=config.inactivity_timeout_seconds
     )
-    limite_vida = ahora - timedelta(seconds=settings.INSTANCE_MAX_LIFETIME_SECONDS)
+    limite_vida = ahora - timedelta(seconds=config.max_lifetime_seconds)
     destroyed = 0
 
     vencidas = Instance.objects.filter(

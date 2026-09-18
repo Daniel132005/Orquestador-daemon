@@ -38,7 +38,7 @@
         </svg>
         <span id="user-xp-display">0</span> XP
       </span>
-      <span class="user-chip">
+      <span class="user-chip" id="user-chip" data-is-staff="{{ user.is_staff|yesno:'true,false' }}" title="">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
@@ -64,11 +64,35 @@
           <button id="btn-stop" class="btn btn-danger" disabled>Destruir</button>
         </div>
       </div>
+      <div class="guide-bar" id="guide-bar" hidden>
+        <button type="button" class="guide-toggle" id="guide-toggle">
+          <span class="guide-toggle-icon">▾</span> Guía del reto
+        </button>
+        <div class="guide-body" id="guide-body">
+          <div class="briefing-row">
+            <span class="briefing-label">Objetivo</span>
+            <p class="briefing-text" id="guide-objective"></p>
+          </div>
+          <div class="briefing-row">
+            <span class="briefing-label">Primer paso</span>
+            <div class="briefing-code">
+              <code id="guide-first-step"></code>
+              <button type="button" class="btn-copy" id="guide-copy" title="Copiar comando">Copiar</button>
+            </div>
+          </div>
+          <div class="briefing-row">
+            <span class="briefing-label">Qué vas a ver</span>
+            <p class="briefing-text" id="guide-expected"></p>
+          </div>
+        </div>
+      </div>
       <div class="terminal-wrap">
         <div id="terminal"></div>
         <div class="terminal-empty" id="terminal-empty">
-          <p>Sin instancia activa</p>
-          <p class="muted" id="challenge-picker-note">Elegí un reto y desplegalo para abrir la consola.</p>
+          <div class="catalog-head">
+            <h2 class="catalog-title">Catálogo de retos</h2>
+            <p class="muted" id="challenge-picker-note">Elegí un reto y desplegalo para abrir la consola.</p>
+          </div>
           <div class="difficulty-filter" id="difficulty-filter" role="group" aria-label="Filtrar por dificultad">
             <button type="button" class="difficulty-filter-btn is-active" data-difficulty="todos">Todos</button>
             <button type="button" class="difficulty-filter-btn" data-difficulty="basico">Básico</button>
@@ -120,27 +144,11 @@
         <dl>
           <div class="kv"><dt>Estado</dt><dd id="info-state">—</dd></div>
           <div class="kv"><dt>Reto</dt><dd id="info-challenge">—</dd></div>
+          <div class="kv"><dt>Imagen</dt><dd id="info-image" class="mono-value">—</dd></div>
           <div class="kv"><dt>Contenedor</dt><dd id="info-container">—</dd></div>
           <div class="kv"><dt>Red</dt><dd id="info-network">—</dd></div>
           <div class="kv"><dt>Creada</dt><dd id="info-created">—</dd></div>
         </dl>
-        <div class="challenge-briefing" id="info-briefing" hidden>
-          <div class="briefing-row">
-            <span class="briefing-label">Objetivo</span>
-            <p class="briefing-text" id="info-briefing-objective"></p>
-          </div>
-          <div class="briefing-row">
-            <span class="briefing-label">Primer paso</span>
-            <div class="briefing-code">
-              <code id="info-briefing-first-step"></code>
-              <button type="button" class="btn-copy" id="info-briefing-copy" title="Copiar comando">Copiar</button>
-            </div>
-          </div>
-          <div class="briefing-row">
-            <span class="briefing-label">Qué vas a ver</span>
-            <p class="briefing-text" id="info-briefing-expected"></p>
-          </div>
-        </div>
       </div>
 
       <div class="side-section">
@@ -159,6 +167,7 @@
           a internet y sin visibilidad hacia los contenedores de otros
           estudiantes.
         </p>
+        <div class="kv"><dt>Nivel de seguridad</dt><dd class="mono-value">cgroups v2</dd></div>
       </div>
 
       <div class="side-section">
@@ -173,12 +182,24 @@
     </aside>
   </main>
 
+  <div class="toast-fixed" id="destroyed-toast" hidden>
+    <span class="toast-icon">⚠</span>
+    <div class="toast-body">
+      <strong class="toast-title">La instancia se destruyó sola</strong>
+      <p class="toast-text" id="destroyed-toast-text">
+        El watchdog la destruyó automáticamente (inactividad o tiempo
+        máximo de vida alcanzado). Desplegá una nueva si la necesitás.
+      </p>
+    </div>
+    <button type="button" class="toast-close" id="destroyed-toast-close" aria-label="Cerrar">✕</button>
+  </div>
+
   <div class="rail rail-bottom">
     <span class="rail-item"><span class="rail-dot is-ok"></span>Aislamiento: red interna + cgroups</span>
     <span class="rail-item" id="session-info">—</span>
   </div>
 
-  <div class="modal-backdrop" id="victory-modal" hidden>
+  <div class="modal-backdrop" id="victory-modal" hidden onclick="if (event.target === this) this.hidden = true">
     <div class="modal-card">
       <div class="modal-glow"></div>
       <div class="modal-icon">
@@ -198,7 +219,42 @@
       </div>
       <p class="modal-desc" id="victory-message">Has explotado la vulnerabilidad con éxito y capturado la bandera legítima.</p>
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" id="btn-victory-close">Continuar</button>
+        <button type="button" class="btn btn-primary" id="btn-victory-close" onclick="document.getElementById('victory-modal').hidden = true">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="settings-modal" hidden onclick="if (event.target === this) this.hidden = true">
+    <div class="modal-card settings-card">
+      <h2 class="modal-title settings-title">Panel oculto</h2>
+      <p class="modal-subtitle settings-subtitle">Configuración del watchdog</p>
+
+      <div class="settings-field">
+        <label for="settings-inactivity">Umbral de inactividad (minutos)</label>
+        <div class="number-stepper">
+          <input type="number" id="settings-inactivity" min="1" step="1" />
+          <div class="number-stepper-arrows">
+            <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="1" aria-label="Aumentar">▲</button>
+            <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="-1" aria-label="Disminuir">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label for="settings-lifetime">Vida máxima absoluta (horas)</label>
+        <div class="number-stepper">
+          <input type="number" id="settings-lifetime" min="1" step="0.5" />
+          <div class="number-stepper-arrows">
+            <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="0.5" aria-label="Aumentar">▲</button>
+            <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="-0.5" aria-label="Disminuir">▼</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="settings-feedback" id="settings-feedback" hidden></p>
+
+      <div class="modal-actions settings-actions">
+        <button type="button" class="btn btn-ghost" id="btn-settings-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-settings-save">Guardar</button>
       </div>
     </div>
   </div>

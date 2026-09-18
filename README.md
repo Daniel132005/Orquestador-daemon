@@ -19,7 +19,11 @@ Implementación siguiendo [sdd-plataforma-ctf.md](docs/sdd-plataforma-ctf.md), l
 - [Día 8 — Retos OWASP seleccionables](docs/dia-8-retos-owasp.md)
 - [Día 9 — Los diez retos OWASP, por dificultad](docs/dia-9-owasp-top-10-completo.md)
 - [Día 10 — Guía real por reto (objetivo, primer paso, qué esperar)](docs/dia-10-guia-de-reto.md)
+- [Día 12 — El navegador estaba corriendo un `terminal.js` viejo](docs/dia-12-cache-de-estaticos.md)
+- [Día 13 — El modal nunca estuvo realmente oculto](docs/dia-13-modal-siempre-visible.md)
+- [Día 14 — Configuración del watchdog editable desde /admin/](docs/dia-14-configuracion-en-caliente.md)
 - [Guía de pruebas manuales y de estrés](docs/guia-pruebas-manuales.md)
+- [Soluciones de los 10 retos OWASP](docs/soluciones-retos.md)
 - [Arquitectura del Sistema y Justificación](docs/arquitectura.md)
 
 ---
@@ -221,8 +225,8 @@ Detalles y límites conocidos en el
 | `CTF_MEMORY_LIMIT_MB` | `256` | Límite de memoria por contenedor |
 | `CTF_NANO_CPUS` | `500000000` | CPU (500000000 = 0.5 núcleos) |
 | `CTF_PIDS_LIMIT` | `64` | Máximo de procesos por contenedor |
-| `CTF_INACTIVITY_TIMEOUT_SECONDS` | `900` | Inactividad antes de destruir (watchdog) |
-| `CTF_MAX_LIFETIME_SECONDS` | `7200` | Vida máxima absoluta, aunque haya actividad constante (ver [Día 7](docs/dia-7-vida-maxima-y-demo.md)) |
+| `CTF_INACTIVITY_TIMEOUT_SECONDS` | `900` | Valor inicial del umbral de inactividad — después es editable en caliente desde `/admin/` (ver [Día 14](docs/dia-14-configuracion-en-caliente.md)), sin reiniciar el servidor |
+| `CTF_MAX_LIFETIME_SECONDS` | `7200` | Valor inicial de la vida máxima absoluta (ver [Día 7](docs/dia-7-vida-maxima-y-demo.md)) — también editable en `/admin/` |
 | `CTF_WATCHDOG_INTERVAL_SECONDS` | `60` | Cada cuánto barre el watchdog |
 | `CTF_WATCHDOG_INTEGRADO` | (automático) | `0` desactiva el watchdog integrado; `1` lo fuerza |
 | `DJANGO_SECRET_KEY` | clave de desarrollo | **Cambiar en producción** |

@@ -541,6 +541,59 @@ body {
   gap: 8px;
 }
 
+/* ---------- Guía del reto (barra colapsable arriba de la terminal) ---------- */
+
+.guide-bar {
+  flex: none;
+  background: var(--green-soft);
+  border-bottom: 1px solid var(--green-line);
+}
+
+.guide-bar[hidden] {
+  display: none;
+}
+
+.guide-toggle {
+  width: 100%;
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  cursor: pointer;
+  text-align: left;
+}
+
+.guide-toggle-icon {
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+.guide-toggle.is-collapsed .guide-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.guide-body {
+  padding: 2px 14px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.guide-body[hidden] {
+  display: none;
+}
+
+.guide-body .briefing-row {
+  gap: 2px;
+}
+
 /* ---------- Terminal ---------- */
 
 .terminal-wrap {
@@ -548,6 +601,13 @@ body {
   flex: 1;
   min-height: 0;
   background: #050807;
+  /* Si esta caja se achica (ej. al crecer la barra de bandera debajo
+     por un mensaje de error) y el canvas interno de xterm no se
+     reajusta al instante, se desborda visualmente encima de lo que
+     esté debajo. `overflow: hidden` lo recorta; el ResizeObserver de
+     terminal.js se encarga de que ese desborde ni siquiera llegue a
+     pasar. */
+  overflow: hidden;
   /* El padding vive acá, no en #terminal: fitAddon mide el clientHeight
      de #terminal para calcular cuántas filas entran, y no descuenta su
      propio padding -- con el padding puesto ahí, calculaba una fila de
@@ -633,22 +693,80 @@ body {
   color: var(--green);
 }
 
+.catalog-head {
+  width: min(880px, 94vw);
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.catalog-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  text-transform: none;
+}
+
 .challenge-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(880px, 94vw);
+  margin-top: 10px;
+  text-align: left;
+}
+
+.category-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.category-code {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--green);
+}
+
+.category-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+}
+
+.category-count {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted-dim);
+  text-transform: none;
+}
+
+.category-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 10px;
-  width: min(820px, 92vw);
-  margin-top: 6px;
 }
 
 @media (max-width: 620px) {
-  .challenge-picker {
+  .category-cards {
     grid-template-columns: 1fr;
   }
 }
 
 .challenge-picker-empty {
-  grid-column: 1 / -1;
   margin: 0;
   padding: 20px 0;
   font-size: 11px;
@@ -660,7 +778,7 @@ body {
 /* ---------- Guía del reto (objetivo / primer paso / qué esperar) ---------- */
 
 .challenge-briefing {
-  width: min(820px, 92vw);
+  width: min(880px, 94vw);
   margin-top: 4px;
   padding: 14px 16px;
   border: 1px solid var(--green-line);
@@ -797,10 +915,13 @@ body {
   color: var(--text);
 }
 
-.challenge-card-owasp {
+.image-tag {
+  display: inline-block;
+  margin-top: 6px;
   font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--amber);
+  letter-spacing: 0.02em;
+  color: var(--muted-dim);
+  text-transform: none;
 }
 
 .difficulty-tag {
@@ -927,6 +1048,12 @@ body {
   color: var(--green);
 }
 
+.mono-value {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--green-bright);
+}
+
 .side-note {
   margin: 0;
   font-size: 11px;
@@ -995,6 +1122,10 @@ body {
 }
 
 /* ---------- Barra de Entrega de Bandera (Flag Bar) ---------- */
+
+.flag-bar[hidden] {
+  display: none;
+}
 
 .flag-bar {
   flex: none;
@@ -1102,6 +1233,16 @@ body {
 }
 
 /* ---------- Modal de Celebración de Victoria ---------- */
+
+.modal-backdrop[hidden] {
+  /* Sin esto, `display: flex` de más abajo le gana al atributo nativo
+     `hidden`: una regla del autor con `display` explícito siempre le
+     gana a la regla por defecto del navegador para `[hidden]`, sin
+     importar la especificidad ni si el atributo está puesto. Por eso el
+     modal se veía siempre, aunque `hidden` estuviera correctamente en
+     `true` (ver docs/dia-13-modal-siempre-visible.md). */
+  display: none;
+}
 
 .modal-backdrop {
   position: fixed;
@@ -1223,6 +1364,202 @@ body {
   padding: 10px 20px;
   font-size: 12px;
   font-weight: 600;
+}
+
+/* ---------- Toast fijo: instancia destruida sola ---------- */
+
+.toast-fixed {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 46px);
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(460px, 92vw);
+  padding: 14px 16px;
+  background: #241207;
+  border: 1px solid rgba(245, 181, 68, 0.45);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.toast-fixed[hidden] {
+  display: none;
+}
+
+.toast-icon {
+  flex: none;
+  font-size: 16px;
+  color: var(--amber);
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.toast-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--amber);
+}
+
+.toast-text {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.toast-close {
+  flex: none;
+  padding: 3px 7px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* ---------- Panel oculto de configuración (5 clicks en el nombre) ---------- */
+
+.settings-card {
+  text-align: left;
+  max-width: 380px;
+}
+
+.settings-title,
+.settings-subtitle {
+  text-align: center;
+}
+
+.settings-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.settings-field label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.number-stepper {
+  position: relative;
+  display: flex;
+}
+
+.settings-field input {
+  width: 100%;
+  padding: 9px 34px 9px 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  /* Las flechas nativas del navegador quedan reemplazadas por
+     `.number-stepper-arrows`, con el mismo estilo del resto de la UI. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.settings-field input::-webkit-outer-spin-button,
+.settings-field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.settings-field input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-soft);
+}
+
+.number-stepper-arrows {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  display: flex;
+  flex-direction: column;
+  width: 26px;
+  border-left: 1px solid var(--border);
+}
+
+.number-stepper-btn {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--panel-3);
+  border: none;
+  cursor: pointer;
+}
+
+.number-stepper-btn:first-child {
+  border-radius: 0 3px 0 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.number-stepper-btn:last-child {
+  border-radius: 0 0 3px 0;
+}
+
+.number-stepper-btn:hover {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.number-stepper-btn:active {
+  color: var(--green-bright);
+}
+
+.settings-feedback {
+  margin: 4px 0 14px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+.settings-feedback.is-success {
+  color: var(--green);
+  background: rgba(62, 240, 165, 0.1);
+  border: 1px solid rgba(62, 240, 165, 0.3);
+}
+
+.settings-feedback.is-error {
+  color: #ff6b7a;
+  background: rgba(255, 107, 122, 0.1);
+  border: 1px solid rgba(255, 107, 122, 0.3);
+}
+
+.settings-actions {
+  gap: 10px;
+}
+
+.settings-actions .btn {
+  min-width: 0;
+  flex: 1;
 }
 
 @media (max-width: 880px) {

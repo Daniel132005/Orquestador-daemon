@@ -13,6 +13,7 @@ import time
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from ctf.models import PlatformSettings
 from ctf.watchdog import sweep_stale_instances
 
 
@@ -43,7 +44,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             f"Watchdog iniciado (umbral="
-            f"{settings.INSTANCE_INACTIVITY_TIMEOUT_SECONDS}s, "
+            f"{PlatformSettings.actual().inactivity_timeout_seconds}s, "
             f"intervalo={interval}s, once={options['once']})"
         )
 
