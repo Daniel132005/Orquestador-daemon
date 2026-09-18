@@ -22,7 +22,14 @@ class PlatformSettingsAdmin(admin.ModelAdmin):
     que se deshabilita "agregar" y "borrar" -- solo queda editarla.
     """
 
-    list_display = ("inactivity_timeout_seconds", "max_lifetime_seconds", "updated_at")
+    list_display = (
+        "inactivity_timeout_seconds",
+        "time_limit_basico_seconds",
+        "time_limit_intermedio_seconds",
+        "time_limit_dificil_seconds",
+        "max_lifetime_seconds",
+        "updated_at",
+    )
     readonly_fields = ("updated_at",)
 
     def has_add_permission(self, request):

@@ -538,7 +538,46 @@ body {
 
 .actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.countdown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-badge[hidden] {
+  display: none;
+}
+
+.countdown-badge.is-warn {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-color: rgba(245, 181, 68, 0.35);
+}
+
+.countdown-badge.is-critical {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(255, 107, 122, 0.4);
+  animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* ---------- Guía del reto (barra colapsable arriba de la terminal) ---------- */
@@ -1099,6 +1138,20 @@ body {
   border-radius: 4px;
 }
 
+.time-limit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 .solved-tag {
   display: inline-flex;
   align-items: center;
@@ -1456,6 +1509,17 @@ body {
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--muted);
+  text-transform: uppercase;
+}
+
+.settings-section-label {
+  margin: 4px 0 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--green);
   text-transform: uppercase;
 }
 

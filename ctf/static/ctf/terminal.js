@@ -67,6 +67,7 @@ const el = {
   victoryXpGain: document.getElementById("victory-xp-gain"),
   victoryMessage: document.getElementById("victory-message"),
   victoryCloseBtn: document.getElementById("btn-victory-close"),
+  countdownBadge: document.getElementById("countdown-badge"),
   destroyedToast: document.getElementById("destroyed-toast"),
   destroyedToastText: document.getElementById("destroyed-toast-text"),
   destroyedToastClose: document.getElementById("destroyed-toast-close"),
@@ -74,6 +75,9 @@ const el = {
   settingsModal: document.getElementById("settings-modal"),
   settingsInactivity: document.getElementById("settings-inactivity"),
   settingsLifetime: document.getElementById("settings-lifetime"),
+  settingsTimeBasico: document.getElementById("settings-time-basico"),
+  settingsTimeIntermedio: document.getElementById("settings-time-intermedio"),
+  settingsTimeDificil: document.getElementById("settings-time-dificil"),
   settingsFeedback: document.getElementById("settings-feedback"),
   settingsSaveBtn: document.getElementById("btn-settings-save"),
   settingsCancelBtn: document.getElementById("btn-settings-cancel"),
@@ -377,6 +381,7 @@ function crearTarjetaReto(reto) {
       <span class="challenge-card-name">${reto.name}</span>
       <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
       <span class="xp-tag">+${reto.xp || 100} XP</span>
+      ${reto.time_limit_seconds ? `<span class="time-limit-tag" title="Vida máxima de la instancia">⏱ ${formatTimeout(reto.time_limit_seconds)}</span>` : ""}
       ${reto.solved ? '<span class="solved-tag">✓ Resuelto</span>' : ""}
     </div>
     <p class="challenge-card-desc">${reto.description}</p>
@@ -482,9 +487,9 @@ function mostrarToastDestruccion() {
   // su vida máxima permitida, lo más probable es que la haya matado eso
   // y no la inactividad.
   let motivo = "por inactividad o por alcanzar su tiempo máximo de vida";
-  if (ultimoStatusActivo && ultimoStatusActivo.created_at) {
-    const vivaDesde = Date.now() - new Date(ultimoStatusActivo.created_at).getTime();
-    const vidaMaximaMs = (ultimoStatusActivo.max_lifetime_seconds || 0) * 1000;
+  if (ultimaInstanciaActiva && ultimaInstanciaActiva.created_at) {
+    const vivaDesde = Date.now() - new Date(ultimaInstanciaActiva.created_at).getTime();
+    const vidaMaximaMs = (ultimaInstanciaActiva.max_lifetime_seconds || 0) * 1000;
     if (vidaMaximaMs > 0 && vivaDesde >= vidaMaximaMs * 0.9) {
       motivo = "por alcanzar su tiempo máximo de vida";
     } else {
@@ -635,6 +640,27 @@ el.stop.addEventListener("click", async () => {
 });
 
 let ultimoStatusActivo = null;
+let ultimaInstanciaActiva = null;
+
+function actualizarCountdown() {
+  if (!el.countdownBadge) return;
+  if (!ultimoStatusActivo || !ultimoStatusActivo.created_at || !ultimoStatusActivo.max_lifetime_seconds) {
+    el.countdownBadge.hidden = true;
+    return;
+  }
+  const limite =
+    new Date(ultimoStatusActivo.created_at).getTime() +
+    ultimoStatusActivo.max_lifetime_seconds * 1000;
+  const restanteS = Math.max(0, Math.floor((limite - Date.now()) / 1000));
+  const mm = String(Math.floor(restanteS / 60)).padStart(2, "0");
+  const ss = String(restanteS % 60).padStart(2, "0");
+  el.countdownBadge.textContent = `⏱ ${mm}:${ss}`;
+  el.countdownBadge.hidden = false;
+  el.countdownBadge.classList.toggle("is-critical", restanteS <= 15);
+  el.countdownBadge.classList.toggle("is-warn", restanteS > 15 && restanteS <= 60);
+}
+
+setInterval(actualizarCountdown, 1000);
 
 async function refresh() {
   const status = await callApi(API.status, "GET");
@@ -642,7 +668,13 @@ async function refresh() {
   el.start.disabled = status.active;
   el.stop.disabled = !status.active;
   setLink(true);
-  if (status.active) ultimoStatusActivo = status;
+  // Para el countdown, que se apague apenas se sabe que ya no está
+  // activa. Para el toast de "se destruyó sola" (mostrarToastDestruccion,
+  // en resincronizar) hace falta el último snapshot ACTIVO, así que ese
+  // se guarda aparte y nunca se limpia con esto.
+  ultimoStatusActivo = status.active ? status : null;
+  if (status.active) ultimaInstanciaActiva = status;
+  actualizarCountdown();
   return status;
 }
 
@@ -729,6 +761,9 @@ if (el.userChip && el.userChip.dataset.isStaff === "true") {
       const config = await callApi(API.platformSettings, "GET");
       el.settingsInactivity.value = Math.round(config.inactivity_timeout_seconds / 60);
       el.settingsLifetime.value = +(config.max_lifetime_seconds / 3600).toFixed(2);
+      el.settingsTimeBasico.value = Math.round(config.time_limit_basico_seconds / 60);
+      el.settingsTimeIntermedio.value = Math.round(config.time_limit_intermedio_seconds / 60);
+      el.settingsTimeDificil.value = Math.round(config.time_limit_dificil_seconds / 60);
       el.settingsFeedback.hidden = true;
       el.settingsModal.hidden = false;
     } catch (err) {
@@ -758,8 +793,14 @@ if (el.settingsSaveBtn) {
   el.settingsSaveBtn.addEventListener("click", async () => {
     const minutos = Number(el.settingsInactivity.value);
     const horas = Number(el.settingsLifetime.value);
-    if (!minutos || !horas || minutos <= 0 || horas <= 0) {
-      el.settingsFeedback.textContent = "Ingresá valores válidos, mayores a 0.";
+    const minBasico = Number(el.settingsTimeBasico.value);
+    const minIntermedio = Number(el.settingsTimeIntermedio.value);
+    const minDificil = Number(el.settingsTimeDificil.value);
+    const todosValidos = [minutos, horas, minBasico, minIntermedio, minDificil].every(
+      (v) => v && v > 0
+    );
+    if (!todosValidos) {
+      el.settingsFeedback.textContent = "Ingresá valores válidos, mayores a 0, en todos los campos.";
       el.settingsFeedback.className = "settings-feedback is-error";
       el.settingsFeedback.hidden = false;
       return;
@@ -770,8 +811,11 @@ if (el.settingsSaveBtn) {
       await callApi(API.platformSettings, "POST", {
         inactivity_timeout_seconds: Math.round(minutos * 60),
         max_lifetime_seconds: Math.round(horas * 3600),
+        time_limit_basico_seconds: Math.round(minBasico * 60),
+        time_limit_intermedio_seconds: Math.round(minIntermedio * 60),
+        time_limit_dificil_seconds: Math.round(minDificil * 60),
       });
-      el.settingsFeedback.textContent = `Guardado: ${minutos} min de inactividad, ${horas} h de vida máxima.`;
+      el.settingsFeedback.textContent = `Guardado: ${minutos} min inactividad · básico ${minBasico}m · intermedio ${minIntermedio}m · difícil ${minDificil}m.`;
       el.settingsFeedback.className = "settings-feedback is-success";
       el.settingsFeedback.hidden = false;
       await refresh();

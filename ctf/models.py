@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from .challenges import DEFAULT_CHALLENGE
+from .challenges import DEFAULT_CHALLENGE, TIME_LIMITS
 
 
 class Instance(models.Model):
@@ -70,9 +70,23 @@ class PlatformSettings(models.Model):
     max_lifetime_seconds = models.PositiveIntegerField(
         default=settings.INSTANCE_MAX_LIFETIME_SECONDS,
         help_text=(
-            "Vida máxima absoluta de una instancia, en segundos, "
-            "aunque haya actividad constante."
+            "Vida máxima absoluta para un reto que no está en el "
+            "catálogo (ej. una instancia vieja de un reto ya "
+            "eliminado) -- para los retos normales manda el límite "
+            "por dificultad de más abajo."
         ),
+    )
+    time_limit_basico_seconds = models.PositiveIntegerField(
+        default=TIME_LIMITS["basico"],
+        help_text="Vida máxima de un reto básico, en segundos.",
+    )
+    time_limit_intermedio_seconds = models.PositiveIntegerField(
+        default=TIME_LIMITS["intermedio"],
+        help_text="Vida máxima de un reto intermedio, en segundos.",
+    )
+    time_limit_dificil_seconds = models.PositiveIntegerField(
+        default=TIME_LIMITS["dificil"],
+        help_text="Vida máxima de un reto difícil, en segundos.",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -89,4 +103,11 @@ class PlatformSettings(models.Model):
         if obj is None:
             obj = cls.objects.create()
         return obj
+
+    def time_limit_for_difficulty(self, difficulty: str) -> int:
+        return {
+            "basico": self.time_limit_basico_seconds,
+            "intermedio": self.time_limit_intermedio_seconds,
+            "dificil": self.time_limit_dificil_seconds,
+        }.get(difficulty, self.time_limit_basico_seconds)
 

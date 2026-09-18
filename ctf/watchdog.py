@@ -11,10 +11,9 @@ import logging
 from datetime import timedelta
 
 from django.db import close_old_connections
-from django.db.models import Q
 from django.utils import timezone
 
-from . import docker_client
+from . import challenges, docker_client
 from .models import Instance, PlatformSettings
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 def sweep_stale_instances() -> int:
     """
     Destruye contenedor + red de las instancias que superaron el umbral de
-    inactividad O la vida máxima absoluta, y borra su fila. Devuelve
+    inactividad O su vida máxima absoluta, y borra su fila. Devuelve
     cuántas destruyó.
 
     Las dos condiciones son independientes a propósito (ver Día 6, prueba
@@ -32,6 +31,14 @@ def sweep_stale_instances() -> int:
     instancia viva sin límite mientras el estudiante no la abandone del
     todo. La vida máxima la corta igual, sin importar cuánta actividad
     observable tenga.
+
+    La vida máxima ya no es un único número global (ver Día 15): depende
+    de la dificultad del reto de cada instancia
+    (`challenges.time_limit_for`), así que hay que calcularla instancia
+    por instancia en vez de filtrarla en un solo `WHERE` de la base --
+    con la poca cantidad de instancias concurrentes que maneja esta
+    plataforma, recorrerlas todas en Python es más simple y no cuesta
+    nada de rendimiento real.
 
     Se llama a `close_old_connections()` al entrar porque esto corre en un
     hilo de larga duración: sin eso, la conexión a la base queda abierta
@@ -44,21 +51,20 @@ def sweep_stale_instances() -> int:
     limite_inactividad = ahora - timedelta(
         seconds=config.inactivity_timeout_seconds
     )
-    limite_vida = ahora - timedelta(seconds=config.max_lifetime_seconds)
     destroyed = 0
 
-    vencidas = Instance.objects.filter(
-        Q(last_activity__lt=limite_inactividad) | Q(created_at__lt=limite_vida)
-    )
-
-    for instance in vencidas:
+    for instance in Instance.objects.all():
         inactive_for = (ahora - instance.last_activity).total_seconds()
         alive_for = (ahora - instance.created_at).total_seconds()
-        motivo = (
-            "vida máxima"
-            if instance.created_at < limite_vida
-            else "inactividad"
-        )
+        limite_vida_seconds = challenges.time_limit_for(instance.challenge)
+
+        vencida_por_inactividad = instance.last_activity < limite_inactividad
+        vencida_por_vida_maxima = alive_for >= limite_vida_seconds
+
+        if not (vencida_por_inactividad or vencida_por_vida_maxima):
+            continue
+
+        motivo = "vida máxima" if vencida_por_vida_maxima else "inactividad"
         logger.info(
             "Destruyendo instancia de %s (%s) por %s: inactiva hace %.0fs, viva hace %.0fs",
             instance.user,

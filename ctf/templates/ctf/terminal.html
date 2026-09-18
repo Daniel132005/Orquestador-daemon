@@ -60,6 +60,7 @@
           <span id="status-text">Comprobando estado</span>
         </div>
         <div class="actions">
+          <span class="countdown-badge" id="countdown-badge" hidden title="Tiempo hasta la vida máxima de esta instancia">⏱ --:--</span>
           <button id="btn-start" class="btn btn-primary" disabled>Desplegar instancia</button>
           <button id="btn-stop" class="btn btn-danger" disabled>Destruir</button>
         </div>
@@ -239,8 +240,41 @@
           </div>
         </div>
       </div>
+      <p class="settings-section-label">Vida máxima por dificultad (minutos)</p>
+
       <div class="settings-field">
-        <label for="settings-lifetime">Vida máxima absoluta (horas)</label>
+        <label for="settings-time-basico">Básico</label>
+        <div class="number-stepper">
+          <input type="number" id="settings-time-basico" min="1" step="1" />
+          <div class="number-stepper-arrows">
+            <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="1" aria-label="Aumentar">▲</button>
+            <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="-1" aria-label="Disminuir">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label for="settings-time-intermedio">Intermedio</label>
+        <div class="number-stepper">
+          <input type="number" id="settings-time-intermedio" min="1" step="1" />
+          <div class="number-stepper-arrows">
+            <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="1" aria-label="Aumentar">▲</button>
+            <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="-1" aria-label="Disminuir">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label for="settings-time-dificil">Difícil</label>
+        <div class="number-stepper">
+          <input type="number" id="settings-time-dificil" min="1" step="1" />
+          <div class="number-stepper-arrows">
+            <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="1" aria-label="Aumentar">▲</button>
+            <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="-1" aria-label="Disminuir">▼</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <label for="settings-lifetime">Vida máxima por defecto (horas) — retos fuera del catálogo</label>
         <div class="number-stepper">
           <input type="number" id="settings-lifetime" min="1" step="0.5" />
           <div class="number-stepper-arrows">

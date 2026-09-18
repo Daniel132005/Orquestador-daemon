@@ -33,14 +33,17 @@ def platform_settings_view(request):
     if not request.user.is_staff:
         return JsonResponse({"error": "No tenés permiso para ver esto"}, status=403)
 
+    campos = (
+        "inactivity_timeout_seconds",
+        "time_limit_basico_seconds",
+        "time_limit_intermedio_seconds",
+        "time_limit_dificil_seconds",
+        "max_lifetime_seconds",
+    )
+
     if request.method == "GET":
         config = PlatformSettings.actual()
-        return JsonResponse(
-            {
-                "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
-                "max_lifetime_seconds": config.max_lifetime_seconds,
-            }
-        )
+        return JsonResponse({campo: getattr(config, campo) for campo in campos})
 
     if request.method == "POST":
         try:
@@ -49,26 +52,20 @@ def platform_settings_view(request):
             return JsonResponse({"error": "JSON inválido"}, status=400)
 
         try:
-            inactividad = int(data["inactivity_timeout_seconds"])
-            vida_maxima = int(data["max_lifetime_seconds"])
+            valores = {campo: int(data[campo]) for campo in campos}
         except (KeyError, TypeError, ValueError):
             return JsonResponse({"error": "Faltan campos o no son números"}, status=400)
 
-        if inactividad < 30 or vida_maxima < 30:
+        if any(valor < 30 for valor in valores.values()):
             return JsonResponse(
                 {"error": "Los valores tienen que ser de al menos 30 segundos"}, status=400
             )
 
         config = PlatformSettings.actual()
-        config.inactivity_timeout_seconds = inactividad
-        config.max_lifetime_seconds = vida_maxima
+        for campo, valor in valores.items():
+            setattr(config, campo, valor)
         config.save()
-        return JsonResponse(
-            {
-                "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
-                "max_lifetime_seconds": config.max_lifetime_seconds,
-            }
-        )
+        return JsonResponse({campo: getattr(config, campo) for campo in campos})
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
@@ -82,6 +79,7 @@ def _challenge_summary(reto: dict) -> dict:
         "owasp": reto["owasp"],
         "difficulty": reto["difficulty"],
         "xp": reto.get("xp", 100),
+        "time_limit_seconds": reto.get("time_limit_seconds", challenges.time_limit_for(reto["slug"])),
         "image": reto["image"],
         "description": reto["description"],
         "objective": reto["objective"],
@@ -153,7 +151,9 @@ def instance_status(request):
             "pids": settings.CTF_PIDS_LIMIT,
         },
         "inactivity_timeout_seconds": config.inactivity_timeout_seconds,
-        "max_lifetime_seconds": config.max_lifetime_seconds,
+        "max_lifetime_seconds": (
+            challenges.time_limit_for(instance.challenge) if instance else config.max_lifetime_seconds
+        ),
     }
     return JsonResponse(payload)
 

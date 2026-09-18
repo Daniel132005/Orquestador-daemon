@@ -32,6 +32,15 @@ XP_VALUES = {
     "dificil": 500,
 }
 
+# Vida máxima absoluta según la dificultad del reto (ver Día 15): un
+# reto básico no necesita las mismas dos horas que uno difícil, así que
+# el techo de tiempo (ver ctf/watchdog.py) ahora depende de cuál sea.
+TIME_LIMITS = {
+    "basico": 5 * 60,
+    "intermedio": 10 * 60,
+    "dificil": 15 * 60,
+}
+
 CHALLENGES = {
     "injection-sqli": {
         "name": "Login vulnerable",
@@ -224,6 +233,30 @@ def get_challenge(slug: str) -> dict | None:
     return CHALLENGES.get(slug)
 
 
+def time_limit_for(slug: str) -> int:
+    """
+    Vida máxima absoluta (segundos) para un reto, según su dificultad --
+    leída de `PlatformSettings` (editable en `/admin/` o en el panel
+    oculto, ver Día 15), no de `TIME_LIMITS` acá arriba (eso solo presta
+    los valores por defecto de esos campos, para no repetir los números
+    en dos lugares).
+
+    Si el slug no está en el catálogo (ej. una instancia vieja de un
+    reto que ya no existe), usa `max_lifetime_seconds` como respaldo.
+
+    Import acá adentro, no arriba del archivo, para no crear un ciclo
+    entre `challenges.py` y `models.py` (que a su vez importa de acá).
+    """
+    from .models import PlatformSettings
+
+    config = PlatformSettings.actual()
+    challenge = CHALLENGES.get(slug)
+    if challenge:
+        return config.time_limit_for_difficulty(challenge["difficulty"])
+
+    return config.max_lifetime_seconds
+
+
 def validate_flag(slug: str, submitted_flag: str) -> tuple[bool, int]:
     """
     Valida si la bandera entregada coincide con la esperada para el reto.
@@ -248,6 +281,7 @@ def list_challenges() -> list[dict]:
             "owasp": datos["owasp"],
             "difficulty": datos["difficulty"],
             "xp": datos.get("xp", XP_VALUES.get(datos["difficulty"], 100)),
+            "time_limit_seconds": time_limit_for(slug),
             "image": datos["image"],
             "description": datos["description"],
             "objective": datos["objective"],
