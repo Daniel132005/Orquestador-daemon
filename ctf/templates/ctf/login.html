@@ -10,11 +10,6 @@
 <body class="auth-body">
   <div class="shell"></div>
 
-  <div class="rail rail-top">
-    <span class="rail-item"><span class="rail-dot" id="link-dot"></span><span id="link-text">Comprobando enlace</span></span>
-    <span class="rail-item" id="latency">Latencia: —</span>
-  </div>
-
   <main class="auth-card">
     <div class="auth-mark">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -25,18 +20,13 @@
     </div>
 
     <div class="auth-head">
-      <span class="chip" id="protocol-chip">Comprobando protocolo</span>
+      <span class="chip is-highlight">10 retos // OWASP Top 10 2021</span>
       <h1 class="auth-title">ROOT_LABS<span class="sep">//</span>CTF PORTAL</h1>
       <p class="auth-sub">Autenticación segura para entornos de laboratorio Docker</p>
     </div>
 
-    <div class="meta-strip">
-      <span>Entorno: <strong>{{ entorno }}</strong></span>
-      <span class="meta-version">{{ version }}</span>
-    </div>
-
     {% if form.errors %}
-      <div class="alert">Credenciales inválidas — AUTH_DENIED</div>
+      <div class="alert">Credenciales inválidas — ACCESO DENEGADO</div>
     {% endif %}
 
     <form method="post" class="auth-form">

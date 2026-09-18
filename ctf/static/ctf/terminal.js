@@ -23,9 +23,6 @@ const API = {
 };
 
 const el = {
-  linkDot: document.getElementById("link-dot"),
-  linkText: document.getElementById("link-text"),
-  protocolNote: document.getElementById("protocol-note"),
   sessionInfo: document.getElementById("session-info"),
   dot: document.getElementById("status-dot"),
   statusText: document.getElementById("status-text"),
@@ -221,18 +218,6 @@ async function callApi(path, method = "POST", body = null) {
 function setStatus(text, variant) {
   el.statusText.textContent = text;
   el.dot.className = variant ? `rail-dot is-${variant}` : "rail-dot";
-}
-
-function setLink(ok) {
-  el.linkDot.className = ok ? "rail-dot is-ok" : "rail-dot is-down";
-  el.linkText.textContent = ok ? "Enlace activo" : "Sin enlace";
-}
-
-function renderProtocol() {
-  el.protocolNote.textContent =
-    window.location.protocol === "https:"
-      ? "TLS activo // sesión cifrada"
-      : "HTTP local // sin cifrar";
 }
 
 function renderSessionInfo() {
@@ -724,7 +709,6 @@ async function refresh() {
   renderInfo(status);
   el.start.disabled = status.active;
   el.stop.disabled = !status.active;
-  setLink(true);
   // Para el countdown, que se apague apenas se sabe que ya no está
   // activa. Para el toast de "se destruyó sola" (mostrarToastDestruccion,
   // en resincronizar) hace falta el último snapshot ACTIVO, así que ese
@@ -1132,7 +1116,6 @@ document.addEventListener("keydown", (evento) => {
 
 (async function init() {
   if (el.victoryModal) el.victoryModal.hidden = true;
-  renderProtocol();
   renderSessionInfo();
   try {
     await cargarRetos();
@@ -1148,7 +1131,6 @@ document.addEventListener("keydown", (evento) => {
       setStatus("Sin instancia", null);
     }
   } catch (err) {
-    setLink(false);
     setStatus(`Sin estado: ${err.message}`, "down");
   }
 })();

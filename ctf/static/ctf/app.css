@@ -138,6 +138,18 @@ body {
   color: var(--muted);
 }
 
+.chip.is-highlight {
+  background: var(--amber-soft);
+  border-color: rgba(245, 181, 68, 0.4);
+  color: var(--amber);
+  animation: chipGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes chipGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(245, 181, 68, 0); }
+  50% { box-shadow: 0 0 12px rgba(245, 181, 68, 0.55); }
+}
+
 .tag {
   font-size: 9.5px;
   letter-spacing: 0.11em;
@@ -151,9 +163,16 @@ body {
   min-height: 100%;
   display: grid;
   place-items: center;
-  padding: 60px 24px;
+  padding: 44px 24px;
   background:
     radial-gradient(ellipse 70% 45% at 50% 0%, rgba(62, 240, 165, 0.05), transparent 70%),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(62, 240, 165, 0.03) 0px,
+      rgba(62, 240, 165, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
     var(--bg);
 }
 
@@ -161,7 +180,7 @@ body {
   position: relative;
   width: 100%;
   max-width: 400px;
-  padding: 34px 30px 28px;
+  padding: 26px 30px 22px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -182,7 +201,7 @@ body {
 .auth-mark {
   width: 54px;
   height: 54px;
-  margin: 0 auto 18px;
+  margin: 0 auto 10px;
   display: grid;
   place-items: center;
   border-radius: 13px;
@@ -193,11 +212,11 @@ body {
 
 .auth-head {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .auth-title {
-  margin: 12px 0 8px;
+  margin: 8px 0 6px;
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -221,7 +240,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 9px 12px;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
   background: var(--panel-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
@@ -248,7 +267,7 @@ body {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 17px;
+  gap: 12px;
 }
 
 .field-head {
@@ -308,6 +327,20 @@ body {
   box-shadow: 0 0 0 3px var(--green-soft);
 }
 
+/* El navegador fuerza un fondo claro en campos con credenciales
+   guardadas (autofill), pisando el fondo oscuro de arriba. Esto lo
+   "repinta" por encima con un box-shadow inset gigante, el único truco
+   que funciona porque `background` en sí no se puede sobrescribir en
+   :-webkit-autofill. */
+.input-wrap input:-webkit-autofill,
+.input-wrap input:-webkit-autofill:hover,
+.input-wrap input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--panel-2) inset;
+  box-shadow: 0 0 0 1000px var(--panel-2) inset;
+  caret-color: var(--text);
+}
+
 .input-wrap input[type="password"] {
   padding-right: 38px;
 }
@@ -329,7 +362,7 @@ body {
 }
 
 .note-box {
-  margin-top: 22px;
+  margin-top: 14px;
   padding: 11px 13px;
   display: flex;
   align-items: flex-start;
@@ -364,7 +397,7 @@ body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
 .btn:disabled {
@@ -380,6 +413,8 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--green-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(62, 240, 165, 0.35), 0 6px 14px rgba(0, 0, 0, 0.3);
 }
 
 .btn-danger {
@@ -754,7 +789,7 @@ body {
 }
 
 .catalog-head {
-  width: min(880px, 94vw);
+  width: min(880px, 100%);
   margin-bottom: 4px;
   text-align: left;
 }
@@ -772,7 +807,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  width: min(880px, 94vw);
+  width: min(880px, 100%);
   margin-top: 10px;
   text-align: left;
 }
@@ -849,7 +884,7 @@ body {
 /* ---------- Guía del reto (objetivo / primer paso / qué esperar) ---------- */
 
 .challenge-briefing {
-  width: min(880px, 94vw);
+  width: min(880px, 100%);
   margin-top: 4px;
   padding: 14px 16px;
   border: 1px solid var(--green-line);
