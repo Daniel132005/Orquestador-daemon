@@ -24,6 +24,11 @@ Cada entrada tiene, además de la descripción de la falla:
   algo salió distinto a lo esperado.
 """
 
+import hashlib
+import hmac
+
+from django.conf import settings
+
 DIFICULTADES = ("basico", "intermedio", "dificil")
 
 XP_VALUES = {
@@ -257,18 +262,39 @@ def time_limit_for(slug: str) -> int:
     return config.max_lifetime_seconds
 
 
-def validate_flag(slug: str, submitted_flag: str) -> tuple[bool, int]:
+def generate_dynamic_flag(user_id: int, slug: str) -> str:
     """
-    Valida si la bandera entregada coincide con la esperada para el reto.
-    Devuelve (es_valida, xp_otorgado).
+    Genera una bandera determinística e infalsificable única para cada
+    usuario y reto, derivada del SECRET_KEY de Django y el user_id.
+    Formato: FLAG{slug_hash16}
+    """
+    secret = getattr(settings, "SECRET_KEY", "dev-only-insecure-secret-key").encode("utf-8")
+    message = f"{user_id}:{slug}".encode("utf-8")
+    token = hmac.new(secret, message, hashlib.sha256).hexdigest()[:16]
+    return f"FLAG{{{slug}_{token}}}"
+
+
+def validate_flag(
+    slug: str, submitted_flag: str, user_id: int | None = None
+) -> tuple[bool, int]:
+    """
+    Valida la bandera SOLO contra la bandera dinámica personalizada del
+    estudiante (derivada de SECRET_KEY + user_id + slug). No hay respaldo
+    estático a propósito: así la flag de un alumno no le sirve a otro, y una
+    flag vieja filtrada del código fuente tampoco valida. Requiere `user_id`.
+    Devuelve (es_valida, 0).
     """
     challenge = CHALLENGES.get(slug)
     if not challenge:
         return False, 0
-    expected = challenge.get("flag", "").strip()
+
     submitted = (submitted_flag or "").strip()
-    if submitted and submitted == expected:
-        return True, challenge.get("xp", 100)
+    if not submitted or user_id is None:
+        return False, 0
+
+    if submitted == generate_dynamic_flag(user_id, slug):
+        return True, 0
+
     return False, 0
 
 

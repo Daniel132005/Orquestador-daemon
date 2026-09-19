@@ -12,8 +12,10 @@ del daemon (ver SDD 4.1), sin usar `docker-py`.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import socket
+import tarfile
 
 import requests_unixsocket
 from django.conf import settings
@@ -103,7 +105,12 @@ def create_container(
             # eso, nada más — sigue sin poder tocar la red (NET_RAW/ADMIN)
             # ni el resto de lo que el Día 3 verificó que no hacía falta.
             "CapAdd": ["SETUID", "SETGID"],
-            "ReadonlyRootfs": True,
+            # No se usa `ReadonlyRootfs: True` para permitir que el orquestador
+            # inyecte la bandera dinámica personalizada (`/app/flag.txt`) vía
+            # la Docker Engine API antes de arrancar. La seguridad del sistema
+            # de archivos se mantiene intacta: `/app` y los binarios pertenecen a
+            # `root:root` (0755), por lo que el usuario `retador` no puede escribir
+            # en `/app` ni leer `flag.txt` (modo 0600).
             "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
             "AutoRemove": False,
             # `PidsLimit` frena una bomba de PROCESOS, pero un descriptor de
@@ -136,6 +143,64 @@ def create_container(
         _session().post(f"{BASE_URL}/containers/create", json=payload), (201,)
     )
     return response.json()["Id"]
+
+
+def inject_challenge_flag(container_id: str, slug: str, flag: str) -> None:
+    """
+    Inyecta la bandera dinámica del estudiante en el contenedor antes de
+    arrancarlo. Se sube vía la Docker Engine API (PUT /containers/{id}/archive)
+    con permisos root:root (0600) para que el usuario sin privilegios
+    (retador) no pueda leerla directamente sin explotar la falla.
+    """
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        if slug == "idor":
+            # Para IDOR la bandera vive en pedidos.json (pedido 1337)
+            pedidos = {
+                "1001": {
+                    "cliente": "invitado",
+                    "producto": "Sticker ROOT_LABS",
+                    "nota": "Tu pedido.",
+                },
+                "1002": {
+                    "cliente": "invitado",
+                    "producto": "Taza CTF",
+                    "nota": "Tu pedido.",
+                },
+                "1337": {
+                    "cliente": "admin",
+                    "producto": "Acceso VIP",
+                    "flag": flag,
+                },
+            }
+            data = json.dumps(pedidos, indent=2, ensure_ascii=False).encode("utf-8")
+            ti = tarfile.TarInfo(name="pedidos.json")
+            ti.size = len(data)
+            ti.mode = 0o600
+            ti.uname = "root"
+            ti.gname = "root"
+            tar.addfile(ti, io.BytesIO(data))
+        else:
+            # Para los otros 9 retos, la bandera vive en /app/flag.txt
+            data = f"{flag}\n".encode("utf-8")
+            ti = tarfile.TarInfo(name="flag.txt")
+            ti.size = len(data)
+            ti.mode = 0o600
+            ti.uname = "root"
+            ti.gname = "root"
+            tar.addfile(ti, io.BytesIO(data))
+
+    buf.seek(0)
+    response = _session().put(
+        f"{BASE_URL}/containers/{container_id}/archive",
+        params={"path": "/app"},
+        data=buf.getvalue(),
+        headers={"Content-Type": "application/x-tar"},
+    )
+    if response.status_code not in (200, 204):
+        raise DockerClientError(
+            f"No se pudo inyectar la bandera en {container_id[:12]}: {response.text}"
+        )
 
 
 def start_container(container_id: str) -> None:

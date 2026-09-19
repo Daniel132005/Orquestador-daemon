@@ -522,7 +522,9 @@ def submit_flag(request):
     if not reto:
         return JsonResponse({"error": f"Reto '{slug}' no encontrado"}, status=404)
 
-    is_valid, xp_to_award = challenges.validate_flag(slug, submitted_flag)
+    is_valid, xp_to_award = challenges.validate_flag(
+        slug, submitted_flag, user_id=request.user.id
+    )
     if not is_valid:
         instance = Instance.objects.filter(user=request.user).first()
         # El limite aplica sobre la instancia activa del MISMO reto (resuelto
@@ -651,6 +653,8 @@ def start_instance(request):
             nano_cpus=settings.CTF_NANO_CPUS,
             pids_limit=settings.CTF_PIDS_LIMIT,
         )
+        flag = challenges.generate_dynamic_flag(request.user.id, challenge_slug)
+        docker_client.inject_challenge_flag(container_id, challenge_slug, flag)
         docker_client.start_container(container_id)
     except docker_client.DockerClientError as exc:
         # Si el contenedor alcanzó a crearse hay que borrarlo antes que la

@@ -131,9 +131,16 @@ mkdir -p ~/ctf-data
 
 ### 6. Preparar la base de datos y un usuario
 
+> **Importante (WSL):** todo comando de `manage.py` (migrate, createsuperuser,
+> etc.) tiene que apuntar a la MISMA base que usa daphne. Por eso lleva
+> `CTF_DB_PATH` adelante, igual que el comando de arranque. Si lo omitís,
+> migra otro `db.sqlite3` (el del proyecto en `/mnt/c`) y daphne seguirá sin
+> ver los cambios **sin dar ningún error** — el síntoma típico es un
+> `no such column` que no se va aunque "ya migraste".
+
 ```bash
-~/.venvs/ctf-platform/bin/python manage.py migrate
-~/.venvs/ctf-platform/bin/python manage.py createsuperuser
+CTF_DB_PATH=$HOME/ctf-data/db.sqlite3 ~/.venvs/ctf-platform/bin/python manage.py migrate
+CTF_DB_PATH=$HOME/ctf-data/db.sqlite3 ~/.venvs/ctf-platform/bin/python manage.py createsuperuser
 ```
 
 ### 7. Construir las imágenes de los retos
