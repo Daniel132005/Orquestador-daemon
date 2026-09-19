@@ -260,7 +260,8 @@ def console_exec_command(pid_file: str, shell: str | None = None) -> list[str]:
 
 def terminate_console(container_id: str, pid_file: str) -> None:
     """
-    Mata el shell de una consola que ya se cerró.
+    Mata el shell de una consola que ya se cerró, y con él todos los
+    procesos que el estudiante hubiera dejado corriendo en esa sesión.
 
     Docker NO termina el proceso de un `exec` cuando se corta la conexión:
     el shell queda vivo durmiendo sobre una terminal que nadie va a leer.
@@ -270,21 +271,54 @@ def terminate_console(container_id: str, pid_file: str) -> None:
 
     Se usa SIGKILL a propósito: un shell interactivo **ignora** SIGTERM —es
     lo que impide que Ctrl-C lo mate— así que un `kill` normal no surtía
-    ningún efecto. Se mata el grupo de procesos entero (`-PID`) para no
-    dejar huérfanos los trabajos que el shell hubiera lanzado en segundo
-    plano.
+    ningún efecto.
+
+    Se mata por SESIÓN, no por grupo de procesos. El intento anterior
+    (`kill -9 -$PID`, matar el grupo) NO alcanzaba a los trabajos en
+    segundo plano: bash, con control de trabajos, pone cada `cmd &` en su
+    PROPIO grupo de procesos, distinto del de la consola (verificado: un
+    `sleep 300 &` sobrevivía como huérfano hasta que el watchdog reciclaba
+    toda la instancia). En cambio todos comparten la misma SESIÓN, cuyo id
+    es el PID de la consola (es el líder de sesión, por tener el pty). Se
+    recorre `/proc`, se juntan los procesos con ese `sid` y se los mata.
+    Esto sí cubre `cmd &` y subshells detachados como `(cmd &)`.
+
+    Dos riesgos residuales conocidos, ambos aceptados y delegados al
+    watchdog (misma política que el resto del SDD: lo que no se puede
+    cerrar desde adentro del contenedor se declara asumido, no se finge
+    resuelto):
+
+    1. `setsid cmd`: un proceso que se detache a una sesión NUEVA a
+       propósito queda con un `sid` distinto y escapa a este barrido.
+    2. Carrera TOCTOU: entre que se lee `/proc` y se manda el `kill`, un
+       `fork()` puede crear un nieto que no estaba en la lista y sobrevive.
+       Probabilidad bajísima (ventana de milisegundos).
+
+    En ambos casos la red de última instancia es el watchdog, que destruye
+    el contenedor entero por inactividad / vida máxima.
+
+    El `sid` está en el campo 6 de `/proc/PID/stat`, pero el campo 2
+    (`comm`) puede traer espacios o paréntesis, así que se corta el texto
+    después del ÚLTIMO `") "`: como ningún campo posterior contiene `) `,
+    ese siempre es el paréntesis que cierra `comm`, sin importar cómo se
+    llame el proceso.
 
     Es una limpieza best-effort: si el archivo ya no está, no pasa nada.
     """
+    kill_por_sesion = (
+        "p=$(cat " + pid_file + " 2>/dev/null); rm -f " + pid_file + "; "
+        '[ -z "$p" ] && exit 0; '
+        "for d in /proc/[0-9]*; do "
+        's=$(cat "$d/stat" 2>/dev/null) || continue; '
+        'after=${s##*") "}; '
+        "set -- $after; "
+        '[ "$4" = "$p" ] && kill -9 "${d#/proc/}" 2>/dev/null; '
+        "done; "
+        'kill -9 "$p" 2>/dev/null; true'
+    )
     exec_id = create_exec(
         container_id,
-        cmd=[
-            "/bin/sh",
-            "-c",
-            f"p=$(cat {pid_file} 2>/dev/null); rm -f {pid_file}; "
-            '[ -n "$p" ] && kill -9 -$p 2>/dev/null; '
-            '[ -n "$p" ] && kill -9 $p 2>/dev/null; true',
-        ],
+        cmd=["/bin/sh", "-c", kill_por_sesion],
         tty=False,
         attach=False,
     )
