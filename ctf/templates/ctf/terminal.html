@@ -323,14 +323,14 @@
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-users" hidden>
-        <p class="settings-section-label" style="margin-top: 0; padding-top: 0; border-top: none;">Crear cuenta</p>
+        <p class="settings-section-label" id="user-form-title" style="margin-top: 0; padding-top: 0; border-top: none;">Crear cuenta</p>
 
         <div class="settings-field">
           <label for="new-user-username">Usuario</label>
           <input type="text" id="new-user-username" autocomplete="off" placeholder="ej. profesor_garcia" />
         </div>
         <div class="settings-field">
-          <label for="new-user-password">Clave</label>
+          <label for="new-user-password" id="new-user-password-label">Clave</label>
           <div class="user-password-row">
             <input type="text" id="new-user-password" autocomplete="off" placeholder="Al menos 6 caracteres" />
             <button type="button" class="btn-copy" id="btn-generate-password">Generar</button>
@@ -345,6 +345,7 @@
 
         <div class="modal-actions settings-actions">
           <button type="button" class="btn btn-ghost" id="btn-users-close">Cerrar</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel-edit-user" hidden>Cancelar edición</button>
           <button type="button" class="btn btn-primary" id="btn-create-user">Crear usuario</button>
         </div>
 
@@ -356,10 +357,11 @@
                 <th>Usuario</th>
                 <th>Staff</th>
                 <th>Creada</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="users-tbody">
-              <tr><td colspan="3" class="instances-empty">Cargando...</td></tr>
+              <tr><td colspan="4" class="instances-empty">Cargando...</td></tr>
             </tbody>
           </table>
         </div>

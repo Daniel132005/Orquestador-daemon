@@ -22,6 +22,11 @@ class Instance(models.Model):
     network_name = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now_add=True)
+    # Intentos de bandera erronea acumulados en ESTA instancia. Al llegar
+    # al tope (ver views.MAX_INTENTOS_BANDERA) la instancia se destruye.
+    # Vive en la instancia a proposito: redesplegar arranca una fila nueva
+    # con el contador en 0, asi que el limite se resetea al redesplegar.
+    failed_flag_attempts = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return f"Instance(user={self.user_id}, container={self.container_id[:12]})"

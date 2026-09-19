@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 import uuid
 
 from django.conf import settings
@@ -12,6 +13,47 @@ from django.views.decorators.http import require_GET, require_POST
 
 from . import challenges, docker_client
 from .models import Instance, PlatformSettings, SolvedChallenge
+
+# Intentos de bandera erronea permitidos por instancia antes de destruirla.
+MAX_INTENTOS_BANDERA = 5
+
+# Patron de nombre de usuario: 3-20 caracteres, solo letras (con acentos/ñ)
+# y guion bajo. Mismo criterio en crear y editar.
+PATRON_USUARIO = re.compile(r"[A-Za-zÁÉÍÓÚÑáéíóúñ_]{3,20}")
+
+# Filtro basico de groserias (es-Latam) para el nombre de usuario. NO es
+# exhaustivo ni infalible: corta lo evidente en crear/editar. Se comparan
+# ya normalizadas (minusculas, sin acentos) contra el nombre normalizado.
+# Se evitan a proposito palabras que son subcadena de nombres/terminos
+# inocentes (ej. "culo" en "articulo") para no bloquear cuentas legitimas.
+PALABRAS_OBSCENAS = {
+    # Generales / latam
+    "puta", "puto", "putita", "putito", "puton", "mierda", "verga",
+    "verguero", "vergacion", "pija", "pendejo", "pendeja", "cabron",
+    "cabrona", "culero", "chinga", "chingada", "maricon", "maricona",
+    "gilipollas", "capullo", "zorra", "pelotudo", "boludo", "conchudo",
+    "malparido", "hijueputa", "hdp", "ctm", "conchetumare", "joto",
+    "carajo", "pinche", "gonorrea", "malnacido", "concha",
+    # Venezolanas (jerga vulgar). Se evitan formas cortas que sean
+    # subcadena de palabras inocentes: por eso NO va "cono" (coño) suelto,
+    # porque rompe "conocer"; van las formas compuestas inequivocas.
+    "marico", "marica", "guevon", "webon", "huevon", "huebon", "guebon",
+    "mamaguevo", "mamahuevo", "mamaguebo", "mamahuebo", "pajuo", "pajua",
+    "pajudo", "puneta", "conazo", "conoetumadre", "conodetumadre",
+    "singao", "singar", "singada", "cojeculo", "carechimba", "culicagao",
+    "culicagado", "cagon", "cagada", "bicho", "bomba",
+}
+
+
+def _normalizar(texto: str) -> str:
+    """Minusculas y sin acentos, para comparar de forma robusta."""
+    descompuesto = unicodedata.normalize("NFKD", texto.lower())
+    return "".join(c for c in descompuesto if not unicodedata.combining(c))
+
+
+def contiene_palabra_obscena(nombre: str) -> bool:
+    limpio = _normalizar(nombre)
+    return any(mala in limpio for mala in PALABRAS_OBSCENAS)
 
 
 @login_required
@@ -215,8 +257,10 @@ def manage_users_view(request):
     if request.method == "GET":
         usuarios = [
             {
+                "id": u.id,
                 "username": u.username,
                 "is_staff": u.is_staff,
+                "is_self": u.id == request.user.id,
                 "date_joined": u.date_joined.isoformat(),
             }
             for u in User.objects.order_by("username")
@@ -235,22 +279,13 @@ def manage_users_view(request):
 
         if not username or not password:
             return JsonResponse({"error": "Usuario y clave son obligatorios"}, status=400)
-        if not re.fullmatch(r"[A-Za-zÁÉÍÓÚÑáéíóúñ_]{3,20}", username):
-            return JsonResponse(
-                {
-                    "error": (
-                        "El usuario tiene que tener entre 3 y 20 caracteres, "
-                        "solo letras y guion bajo (sin números ni espacios)."
-                    )
-                },
-                status=400,
-            )
+        error_nombre = _error_username(username, User)
+        if error_nombre:
+            return JsonResponse({"error": error_nombre}, status=400)
         if len(password) < 6:
             return JsonResponse(
                 {"error": "La clave tiene que tener al menos 6 caracteres"}, status=400
             )
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({"error": f"Ya existe un usuario '{username}'"}, status=400)
 
         user = User.objects.create_user(username=username, password=password)
         if es_staff:
@@ -258,10 +293,115 @@ def manage_users_view(request):
             user.save()
 
         return JsonResponse(
-            {"status": "creado", "username": user.username, "is_staff": user.is_staff}
+            {"status": "creado", "id": user.id, "username": user.username, "is_staff": user.is_staff}
         )
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+def _error_username(username: str, User, excluir_pk=None) -> str | None:
+    """
+    Valida el nombre de usuario para crear/editar. Devuelve el mensaje de
+    error, o None si es válido. `excluir_pk` deja pasar el propio nombre al
+    editar (no choca consigo mismo).
+    """
+    if not PATRON_USUARIO.fullmatch(username):
+        return (
+            "El usuario tiene que tener entre 3 y 20 caracteres, solo "
+            "letras y guion bajo (sin números ni espacios)."
+        )
+    if contiene_palabra_obscena(username):
+        return "Ese nombre de usuario no está permitido."
+    existe = User.objects.filter(username=username)
+    if excluir_pk is not None:
+        existe = existe.exclude(pk=excluir_pk)
+    if existe.exists():
+        return f"Ya existe un usuario '{username}'"
+    return None
+
+
+@login_required
+@require_POST
+def manage_user_detail_view(request, user_id):
+    """
+    POST /api/platform-settings/users/<id>/ — editar o eliminar una cuenta
+    desde el panel oculto. Solo staff. Se usa POST + campo `accion` en el
+    cuerpo (en vez de PATCH/DELETE) para no depender de métodos que algún
+    proxy/túnel podría filtrar.
+
+    Acciones:
+      - "eliminar": borra la cuenta.
+      - "editar": cambia nombre, rol (is_staff) y opcionalmente la clave.
+
+    Salvaguarda contra quedarse sin acceso: no podés eliminar ni quitarte
+    el rol staff a tu propia cuenta.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tienes permiso para hacer esto"}, status=403)
+
+    User = get_user_model()
+    objetivo = User.objects.filter(pk=user_id).first()
+    if objetivo is None:
+        return JsonResponse({"error": "Ese usuario no existe"}, status=404)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    accion = (data.get("accion") or "").strip()
+    es_uno_mismo = objetivo.id == request.user.id
+
+    if accion == "eliminar":
+        if es_uno_mismo:
+            return JsonResponse(
+                {"error": "No podés eliminar tu propia cuenta."}, status=400
+            )
+        nombre = objetivo.username
+        objetivo.delete()
+        return JsonResponse({"status": "eliminado", "username": nombre})
+
+    if accion == "editar":
+        nuevo_nombre = (data.get("username") or "").strip()
+        nueva_clave = data.get("password") or ""
+        nuevo_rol = data.get("is_staff")
+
+        if nuevo_nombre and nuevo_nombre != objetivo.username:
+            error_nombre = _error_username(nuevo_nombre, User, excluir_pk=objetivo.pk)
+            if error_nombre:
+                return JsonResponse({"error": error_nombre}, status=400)
+            objetivo.username = nuevo_nombre
+
+        if nueva_clave:
+            if len(nueva_clave) < 6:
+                return JsonResponse(
+                    {"error": "La clave tiene que tener al menos 6 caracteres"},
+                    status=400,
+                )
+            objetivo.set_password(nueva_clave)
+
+        if nuevo_rol is not None:
+            quiere_staff = bool(nuevo_rol)
+            # No podés quitarte a vos mismo el rol staff: te dejaría sin
+            # acceso al panel en el acto.
+            if es_uno_mismo and not quiere_staff:
+                return JsonResponse(
+                    {"error": "No podés quitarte a vos mismo el rol de staff."},
+                    status=400,
+                )
+            objetivo.is_staff = quiere_staff
+
+        objetivo.save()
+        return JsonResponse(
+            {
+                "status": "editado",
+                "id": objetivo.id,
+                "username": objetivo.username,
+                "is_staff": objetivo.is_staff,
+            }
+        )
+
+    return JsonResponse({"error": "Acción no reconocida"}, status=400)
 
 
 def _challenge_summary(reto: dict) -> dict:
@@ -384,6 +524,49 @@ def submit_flag(request):
 
     is_valid, xp_to_award = challenges.validate_flag(slug, submitted_flag)
     if not is_valid:
+        instance = Instance.objects.filter(user=request.user).first()
+        # El limite aplica sobre la instancia activa del MISMO reto (resuelto
+        # o no: la idea es cortar el spam/fuerza bruta de banderas). Contar y
+        # destruir sobre la instancia hace que el contador se resetee al
+        # redesplegar (fila nueva, contador en 0).
+        if instance and instance.challenge == slug:
+            instance.failed_flag_attempts += 1
+            instance.save(update_fields=["failed_flag_attempts"])
+            if instance.failed_flag_attempts >= MAX_INTENTOS_BANDERA:
+                try:
+                    docker_client.destroy_instance(
+                        instance.container_id, instance.network_id
+                    )
+                except docker_client.DockerClientError:
+                    # Si Docker falla, se borra la fila igual; el watchdog
+                    # limpia cualquier resto en su proximo barrido.
+                    pass
+                instance.delete()
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "instance_destroyed": True,
+                        "error": (
+                            f"{MAX_INTENTOS_BANDERA} intentos fallidos: la "
+                            "instancia fue destruida. Despliega una nueva "
+                            "para reintentar."
+                        ),
+                    },
+                    status=400,
+                )
+            restantes = MAX_INTENTOS_BANDERA - instance.failed_flag_attempts
+            return JsonResponse(
+                {
+                    "success": False,
+                    "attempts_left": restantes,
+                    "error": (
+                        f"Bandera incorrecta. Te queda{'n' if restantes != 1 else ''} "
+                        f"{restantes} intento{'s' if restantes != 1 else ''} "
+                        "antes de que se destruya la instancia."
+                    ),
+                },
+                status=400,
+            )
         return JsonResponse(
             {
                 "success": False,

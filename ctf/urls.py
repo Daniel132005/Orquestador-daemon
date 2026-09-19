@@ -12,4 +12,5 @@ urlpatterns = [
     path("platform-settings/instances/", views.live_instances_view, name="platform-instances"),
     path("platform-settings/instances/destroy/", views.destroy_container_view, name="platform-instance-destroy"),
     path("platform-settings/users/", views.manage_users_view, name="platform-users"),
+    path("platform-settings/users/<int:user_id>/", views.manage_user_detail_view, name="platform-user-detail"),
 ]

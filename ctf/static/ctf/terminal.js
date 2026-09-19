@@ -97,6 +97,9 @@ const el = {
   createUserBtn: document.getElementById("btn-create-user"),
   usersCloseBtn: document.getElementById("btn-users-close"),
   usersTbody: document.getElementById("users-tbody"),
+  userFormTitle: document.getElementById("user-form-title"),
+  newUserPasswordLabel: document.getElementById("new-user-password-label"),
+  cancelEditUserBtn: document.getElementById("btn-cancel-edit-user"),
   settingsSaveBtn: document.getElementById("btn-settings-save"),
   settingsCancelBtn: document.getElementById("btn-settings-cancel"),
 };
@@ -214,7 +217,13 @@ async function callApi(path, method = "POST", body = null) {
   const response = await fetch(path, options);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || `Error ${response.status}`);
+    // Se adjunta el payload y el status al error para que quien llame
+    // pueda inspeccionar campos extra (ej. instance_destroyed) además del
+    // mensaje.
+    const err = new Error(payload.error || `Error ${response.status}`);
+    err.payload = payload;
+    err.status = response.status;
+    throw err;
   }
   return payload;
 }
@@ -527,24 +536,16 @@ function sendResize() {
 function mostrarToastDestruccion() {
   if (!el.destroyedToast) return;
 
-  // No sabemos con certeza cuál de los dos mecanismos la mató (el
-  // servidor borra la fila sin dejar rastro de "por qué" accesible
-  // desde el frontend), pero se puede estimar: si ya llevaba casi toda
-  // su vida máxima permitida, lo más probable es que la haya matado eso
-  // y no la inactividad.
-  let motivo = "por inactividad o por alcanzar su tiempo máximo de vida";
-  if (ultimaInstanciaActiva && ultimaInstanciaActiva.created_at) {
-    const vivaDesde = Date.now() - new Date(ultimaInstanciaActiva.created_at).getTime();
-    const vidaMaximaMs = (ultimaInstanciaActiva.max_lifetime_seconds || 0) * 1000;
-    if (vidaMaximaMs > 0 && vivaDesde >= vidaMaximaMs * 0.9) {
-      motivo = "por alcanzar su tiempo máximo de vida";
-    } else {
-      motivo = "por inactividad";
-    }
-  }
-
+  // Mensaje genérico y correcto para cualquier causa de destrucción
+  // automática: el frontend no puede saber con certeza cuál fue (el
+  // servidor borra la fila sin dejar el motivo accesible desde acá), y
+  // además puede llegar por caminos distintos (cierre del WebSocket o
+  // respuesta de la API) que compiten entre sí. Un texto que cubre todos
+  // los casos evita mostrar un motivo equivocado gane el que gane.
   el.destroyedToastText.textContent =
-    `El watchdog la destruyó automáticamente ${motivo}. Despliega una nueva si la necesitas.`;
+    "La instancia se cerró automáticamente (tiempo de vida agotado, " +
+    "inactividad o demasiados intentos de bandera fallidos). Despliega " +
+    "una nueva si la necesitas.";
   el.destroyedToast.hidden = false;
 }
 
@@ -576,12 +577,15 @@ function resetUIsinInstancia() {
   el.stop.disabled = true;
 }
 
-function mostrarInstanciaDestruida() {
+function mostrarInstanciaDestruida({ toast = true, statusText = "La instancia ya no existe" } = {}) {
   term.reset();
   showTerminal(false);
   resetUIsinInstancia();
-  setStatus("La instancia ya no existe", null);
-  mostrarToastDestruccion();
+  setStatus(statusText, toast ? null : "warn");
+  // El toast del watchdog no aplica cuando la destrucción tuvo otra causa
+  // explicada aparte (ej. límite de intentos de bandera): en ese caso se
+  // llama con toast:false.
+  if (toast) mostrarToastDestruccion();
 }
 
 function vidaMaximaAgotada() {
@@ -839,6 +843,15 @@ if (el.flagForm) {
       el.flagFeedback.textContent = err.message || "Bandera incorrecta";
       el.flagFeedback.className = "flag-feedback is-error";
       el.flagFeedback.hidden = false;
+      // Se superó el límite de intentos: el servidor ya destruyó la
+      // instancia. Se resetea la UI al estado "sin instancia" (sin el toast
+      // del watchdog: el feedback de bandera de arriba ya explica el motivo).
+      if (err.payload && err.payload.instance_destroyed) {
+        mostrarInstanciaDestruida({
+          toast: false,
+          statusText: "Instancia destruida por demasiados intentos",
+        });
+      }
     } finally {
       el.flagSubmitBtn.disabled = false;
     }
@@ -904,7 +917,12 @@ function cambiarTabPanel(tab) {
   el.settingsTabBtnUsers.classList.toggle("is-active", tab === "users");
 
   if (tab === "instances") cargarInstanciasEnVivo();
-  if (tab === "users") cargarUsuarios();
+  if (tab === "users") {
+    // Siempre arranca en modo "crear" al abrir la pestaña (por si quedó a
+    // medias una edición anterior).
+    if (typeof salirModoEdicionUsuario === "function") salirModoEdicionUsuario();
+    cargarUsuarios();
+  }
 }
 
 if (el.settingsTabBtnUsers) {
@@ -1042,20 +1060,103 @@ if (el.generatePasswordBtn) {
 function renderUsersTable(usuarios) {
   if (!el.usersTbody) return;
   if (!usuarios.length) {
-    el.usersTbody.innerHTML = '<tr><td colspan="3" class="instances-empty">Sin usuarios todavía.</td></tr>';
+    el.usersTbody.innerHTML = '<tr><td colspan="4" class="instances-empty">Sin usuarios todavía.</td></tr>';
     return;
   }
+  // El username solo admite letras y guion bajo (validado en el backend),
+  // así que no puede inyectar HTML/atributos -- se puede interpolar directo.
   el.usersTbody.innerHTML = usuarios
-    .map(
-      (u) => `
+    .map((u) => {
+      const rolLabel = u.is_staff ? "Quitar staff" : "Hacer staff";
+      // No podés degradarte ni eliminarte a vos mismo (te dejaría sin
+      // acceso al panel), así que esos botones no aparecen en tu fila.
+      const rolBtn = u.is_self
+        ? ""
+        : `<button type="button" class="btn-user-accion" data-accion="rol" data-id="${u.id}" data-staff="${u.is_staff ? "1" : "0"}">${rolLabel}</button>`;
+      const delBtn = u.is_self
+        ? ""
+        : `<button type="button" class="btn-user-accion is-danger" data-accion="eliminar" data-id="${u.id}" data-nombre="${u.username}">Eliminar</button>`;
+      return `
     <tr>
-      <td>${u.username}</td>
+      <td>${u.username}${u.is_self ? ' <span class="user-self-tag">vos</span>' : ""}</td>
       <td>${u.is_staff ? '<span class="user-staff-tag">Staff</span>' : "—"}</td>
       <td>${new Date(u.date_joined).toLocaleDateString("es")}</td>
-    </tr>
-  `
-    )
+      <td class="user-acciones">
+        <button type="button" class="btn-user-accion" data-accion="editar" data-id="${u.id}" data-nombre="${u.username}" data-staff="${u.is_staff ? "1" : "0"}">Editar</button>
+        ${rolBtn}
+        ${delBtn}
+      </td>
+    </tr>`;
+    })
     .join("");
+}
+
+async function accionUsuario(id, body) {
+  try {
+    await callApi(`${API.manageUsers}${id}/`, "POST", body);
+    if (el.usersFeedback) el.usersFeedback.hidden = true;
+    await cargarUsuarios();
+  } catch (err) {
+    if (el.usersFeedback) {
+      el.usersFeedback.textContent = err.message;
+      el.usersFeedback.className = "settings-feedback is-error";
+      el.usersFeedback.hidden = false;
+    }
+  }
+}
+
+let editandoUsuarioId = null;
+
+function entrarModoEdicionUsuario(user) {
+  editandoUsuarioId = user.id;
+  el.newUserUsername.value = user.username;
+  el.newUserPassword.value = "";
+  el.newUserIsStaff.checked = user.is_staff;
+  if (el.userFormTitle) el.userFormTitle.textContent = `Editar cuenta: ${user.username}`;
+  if (el.newUserPasswordLabel) el.newUserPasswordLabel.textContent = "Clave (dejar vacía para no cambiarla)";
+  el.newUserPassword.placeholder = "Dejar vacío para mantener la actual";
+  el.createUserBtn.textContent = "Guardar cambios";
+  if (el.cancelEditUserBtn) el.cancelEditUserBtn.hidden = false;
+  if (el.usersFeedback) el.usersFeedback.hidden = true;
+  el.newUserUsername.focus();
+}
+
+function salirModoEdicionUsuario() {
+  editandoUsuarioId = null;
+  el.newUserUsername.value = "";
+  el.newUserPassword.value = "";
+  el.newUserIsStaff.checked = false;
+  if (el.userFormTitle) el.userFormTitle.textContent = "Crear cuenta";
+  if (el.newUserPasswordLabel) el.newUserPasswordLabel.textContent = "Clave";
+  el.newUserPassword.placeholder = "Al menos 6 caracteres";
+  el.createUserBtn.textContent = "Crear usuario";
+  if (el.cancelEditUserBtn) el.cancelEditUserBtn.hidden = true;
+}
+
+if (el.usersTbody) {
+  el.usersTbody.addEventListener("click", async (evento) => {
+    const btn = evento.target.closest(".btn-user-accion");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const accion = btn.dataset.accion;
+
+    if (accion === "editar") {
+      entrarModoEdicionUsuario({
+        id,
+        username: btn.dataset.nombre,
+        is_staff: btn.dataset.staff === "1",
+      });
+    } else if (accion === "rol") {
+      await accionUsuario(id, { accion: "editar", is_staff: btn.dataset.staff !== "1" });
+    } else if (accion === "eliminar") {
+      if (!confirm(`¿Eliminar al usuario "${btn.dataset.nombre}"? Esta acción no se puede deshacer.`)) return;
+      await accionUsuario(id, { accion: "eliminar" });
+    }
+  });
+}
+
+if (el.cancelEditUserBtn) {
+  el.cancelEditUserBtn.addEventListener("click", salirModoEdicionUsuario);
 }
 
 async function cargarUsuarios() {
@@ -1072,39 +1173,63 @@ async function cargarUsuarios() {
   }
 }
 
+function mostrarErrorUsuarios(mensaje) {
+  el.usersFeedback.textContent = mensaje;
+  el.usersFeedback.className = "settings-feedback is-error";
+  el.usersFeedback.hidden = false;
+}
+
 if (el.createUserBtn) {
   el.createUserBtn.addEventListener("click", async () => {
     const username = el.newUserUsername.value.trim();
     const password = el.newUserPassword.value;
+    const enEdicion = editandoUsuarioId !== null;
 
     if (!PATRON_USUARIO.test(username)) {
-      el.usersFeedback.textContent =
-        "El usuario tiene que tener entre 3 y 20 caracteres, solo letras y guion bajo (sin números ni espacios).";
-      el.usersFeedback.className = "settings-feedback is-error";
-      el.usersFeedback.hidden = false;
+      mostrarErrorUsuarios(
+        "El usuario tiene que tener entre 3 y 20 caracteres, solo letras y guion bajo (sin números ni espacios)."
+      );
       return;
     }
-    if (password.length < 6) {
-      el.usersFeedback.textContent = "La clave tiene que tener al menos 6 caracteres.";
-      el.usersFeedback.className = "settings-feedback is-error";
-      el.usersFeedback.hidden = false;
+    // Al crear, la clave es obligatoria (>=6). Al editar, es opcional: si
+    // se deja vacía no se cambia; si se pone, igual tiene que ser >=6.
+    if (!enEdicion && password.length < 6) {
+      mostrarErrorUsuarios("La clave tiene que tener al menos 6 caracteres.");
+      return;
+    }
+    if (enEdicion && password.length > 0 && password.length < 6) {
+      mostrarErrorUsuarios("La clave nueva tiene que tener al menos 6 caracteres (o dejala vacía).");
       return;
     }
 
     el.createUserBtn.disabled = true;
     try {
-      await callApi(API.manageUsers, "POST", {
-        username,
-        password,
-        is_staff: el.newUserIsStaff.checked,
-      });
-      el.usersFeedback.textContent = `Usuario "${username}" creado. Anota la clave -- no se puede volver a ver.`;
-      el.usersFeedback.className = "settings-feedback is-success";
-      el.usersFeedback.hidden = false;
-      el.newUserUsername.value = "";
-      el.newUserPassword.value = "";
-      el.newUserIsStaff.checked = false;
-      await cargarUsuarios();
+      if (enEdicion) {
+        await callApi(`${API.manageUsers}${editandoUsuarioId}/`, "POST", {
+          accion: "editar",
+          username,
+          password: password || undefined, // vacío = no cambiar la clave
+          is_staff: el.newUserIsStaff.checked,
+        });
+        el.usersFeedback.textContent = `Usuario "${username}" actualizado.`;
+        el.usersFeedback.className = "settings-feedback is-success";
+        el.usersFeedback.hidden = false;
+        salirModoEdicionUsuario();
+        await cargarUsuarios();
+      } else {
+        await callApi(API.manageUsers, "POST", {
+          username,
+          password,
+          is_staff: el.newUserIsStaff.checked,
+        });
+        el.usersFeedback.textContent = `Usuario "${username}" creado. Anota la clave -- no se puede volver a ver.`;
+        el.usersFeedback.className = "settings-feedback is-success";
+        el.usersFeedback.hidden = false;
+        el.newUserUsername.value = "";
+        el.newUserPassword.value = "";
+        el.newUserIsStaff.checked = false;
+        await cargarUsuarios();
+      }
     } catch (err) {
       el.usersFeedback.textContent = err.message;
       el.usersFeedback.className = "settings-feedback is-error";

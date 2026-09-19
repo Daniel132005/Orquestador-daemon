@@ -1823,6 +1823,55 @@ body {
   border-radius: 4px;
 }
 
+.user-self-tag {
+  display: inline-flex;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.user-acciones {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-user-accion {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 8px;
+  color: var(--muted);
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.btn-user-accion:hover {
+  color: var(--text);
+  border-color: var(--green-line);
+}
+
+.btn-user-accion.is-danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(255, 107, 122, 0.35);
+}
+
+.btn-user-accion.is-danger:hover {
+  background: rgba(255, 107, 122, 0.2);
+  border-color: rgba(255, 107, 122, 0.5);
+}
+
 .settings-title,
 .settings-subtitle {
   text-align: center;
