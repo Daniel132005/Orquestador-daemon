@@ -554,6 +554,47 @@ if (el.destroyedToastClose) {
   });
 }
 
+function resetUIsinInstancia() {
+  // Deja toda la UI en estado "sin instancia" SIN preguntar al servidor.
+  // Es a propósito: cuando el watchdog destruye la instancia, mata el
+  // contenedor y recién después borra su fila; si consultáramos el estado
+  // en ese instante, la fila todavía podría figurar activa y repintaríamos
+  // la guía y la barra de bandera de una instancia que ya no existe.
+  ultimoStatusActivo = null; // corta el countdown (actualizarCountdown lo lee)
+  if (el.countdownBadge) el.countdownBadge.hidden = true;
+  el.state.innerHTML = '<span class="chip is-idle">Inactiva</span>';
+  el.challenge.textContent = "—";
+  if (el.image) el.image.textContent = "—";
+  el.container.textContent = "—";
+  el.network.textContent = "—";
+  el.created.textContent = "—";
+  if (el.headChallengeChip) el.headChallengeChip.hidden = true;
+  if (el.headContainerChip) el.headContainerChip.hidden = true;
+  if (el.guideBar) el.guideBar.hidden = true;
+  if (el.flagBar) el.flagBar.hidden = true;
+  el.start.disabled = false;
+  el.stop.disabled = true;
+}
+
+function mostrarInstanciaDestruida() {
+  term.reset();
+  showTerminal(false);
+  resetUIsinInstancia();
+  setStatus("La instancia ya no existe", null);
+  mostrarToastDestruccion();
+}
+
+function vidaMaximaAgotada() {
+  // ¿El countdown de vida máxima ya llegó a 0? Si es así, un corte del
+  // WebSocket es el watchdog destruyendo la instancia, no un parpadeo de
+  // red -- no tiene sentido ofrecer "Reconectando". Se usa el último
+  // snapshot activo (nunca se limpia, ver refresh()).
+  const s = ultimaInstanciaActiva;
+  if (!s || !s.created_at || !s.max_lifetime_seconds) return false;
+  const limite = new Date(s.created_at).getTime() + s.max_lifetime_seconds * 1000;
+  return Date.now() >= limite;
+}
+
 async function intentarReconectar() {
   /*
    * La consola se cortó sin que el usuario lo pidiera. Dos causas posibles:
@@ -583,10 +624,7 @@ async function intentarReconectar() {
   }
 
   if (!status.active) {
-    term.reset();
-    showTerminal(false);
-    setStatus("La instancia ya no existe", null);
-    mostrarToastDestruccion();
+    mostrarInstanciaDestruida();
     return;
   }
 
@@ -624,16 +662,14 @@ function connectWebSocket() {
     renderSessionInfo();
     if (closingOnPurpose) return;
 
-    // Códigos con que el servidor rechaza deliberadamente la conexión: la
-    // instancia ya no existe (4004) o no se pudo abrir el exec porque el
-    // contenedor se está destruyendo (4002). Reintentar no tiene sentido
-    // -- es destrucción real (watchdog / `exit`), no un parpadeo de red.
-    // Se corta al instante y se avisa, sin gastar los 4 reintentos.
-    if (event.code === 4004 || event.code === 4002) {
-      term.reset();
-      showTerminal(false);
-      setStatus("La instancia ya no existe", null);
-      mostrarToastDestruccion();
+    // No reintentar cuando es destrucción real, no un parpadeo de red:
+    //  - el servidor rechaza la conexión (4004 = ya no hay instancia,
+    //    4002 = el contenedor se está destruyendo), o
+    //  - la vida máxima ya venció (el countdown llegó a 0 -> es el
+    //    watchdog el que la está destruyendo).
+    // En esos casos se avisa al instante, sin mostrar "Reconectando".
+    if (event.code === 4004 || event.code === 4002 || vidaMaximaAgotada()) {
+      mostrarInstanciaDestruida();
       return;
     }
 
