@@ -54,6 +54,26 @@ class SolvedChallenge(models.Model):
         return f"{self.user.username} - {self.challenge_slug} (+{self.xp_awarded} XP)"
 
 
+class OnboardingState(models.Model):
+    """
+    Estado de onboarding por usuario. Hoy solo registra si ya vio el
+    tutorial de bienvenida, para mostrarlo una sola vez (la primera vez
+    que inicia sesión). Vive en la BD (no en localStorage) para que sea
+    por-persona y sobreviva a cambios de navegador/dispositivo.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="onboarding",
+    )
+    tutorial_visto = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Onboarding(user={self.user_id}, tutorial_visto={self.tutorial_visto})"
+
+
 class PlatformSettings(models.Model):
     """
     Configuración editable en caliente desde /admin/, sin tocar

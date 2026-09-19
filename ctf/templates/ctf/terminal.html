@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,13 +9,15 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
   <link rel="stylesheet" href="{% static 'ctf/app.css' %}" />
 </head>
+
 <body>
   <div class="shell"></div>
 
   <header class="topbar">
     <div class="topbar-brand">
       <span class="topbar-mark">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+          stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2.5 4.5 5.5v6c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10v-6L12 2.5Z" />
           <path d="m9.5 10 2 2-2 2" />
           <path d="M13 14h2" />
@@ -23,8 +26,11 @@
       <span class="topbar-name">ROOT_LABS<span class="sep">//</span>CTF</span>
     </div>
     <div class="topbar-right">
+      <button type="button" class="btn btn-ghost btn-help" id="btn-help" title="Ver el tutorial de bienvenida"
+        aria-label="Ver tutorial">?</button>
       <span class="user-chip" id="user-chip" data-is-staff="{{ user.is_staff|yesno:'true,false' }}" title="">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
@@ -45,7 +51,8 @@
           <span id="status-text">Comprobando estado</span>
         </div>
         <div class="actions">
-          <span class="countdown-badge" id="countdown-badge" hidden title="Tiempo hasta la vida máxima de esta instancia">⏱ --:--</span>
+          <span class="countdown-badge" id="countdown-badge" hidden
+            title="Tiempo hasta la vida máxima de esta instancia">⏱ --:--</span>
           <button id="btn-start" class="btn btn-primary" disabled>Desplegar instancia</button>
           <button id="btn-stop" class="btn btn-danger" disabled>Destruir</button>
         </div>
@@ -109,7 +116,8 @@
       <div class="flag-bar" id="flag-bar" hidden>
         <div class="flag-bar-header">
           <span class="flag-bar-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
               <line x1="4" y1="22" x2="4" y2="15"></line>
             </svg>
@@ -118,7 +126,8 @@
           <span class="flag-bar-status" id="flag-status-badge">Reto en curso</span>
         </div>
         <form class="flag-form" id="flag-form" autocomplete="off">
-          <input type="text" id="flag-input" class="flag-input" placeholder="Ingresa la bandera FLAG{...}" spellcheck="false" required />
+          <input type="text" id="flag-input" class="flag-input" placeholder="Ingresa la bandera FLAG{...}"
+            spellcheck="false" required />
           <button type="submit" class="btn btn-primary btn-submit-flag" id="btn-submit-flag">Validar</button>
         </form>
         <div class="flag-feedback" id="flag-feedback" hidden></div>
@@ -129,21 +138,48 @@
       <div class="side-section">
         <h2 class="side-title">Instancia</h2>
         <dl>
-          <div class="kv"><dt>Estado</dt><dd id="info-state">—</dd></div>
-          <div class="kv"><dt>Reto</dt><dd id="info-challenge">—</dd></div>
-          <div class="kv"><dt>Imagen</dt><dd id="info-image" class="mono-value">—</dd></div>
-          <div class="kv"><dt>Contenedor</dt><dd id="info-container">—</dd></div>
-          <div class="kv"><dt>Red</dt><dd id="info-network">—</dd></div>
-          <div class="kv"><dt>Creada</dt><dd id="info-created">—</dd></div>
+          <div class="kv">
+            <dt>Estado</dt>
+            <dd id="info-state">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Reto</dt>
+            <dd id="info-challenge">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Imagen</dt>
+            <dd id="info-image" class="mono-value">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Contenedor</dt>
+            <dd id="info-container">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Red</dt>
+            <dd id="info-network">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Creada</dt>
+            <dd id="info-created">—</dd>
+          </div>
         </dl>
       </div>
 
       <div class="side-section">
         <h2 class="side-title">Límites de recursos</h2>
         <dl>
-          <div class="kv"><dt>Memoria</dt><dd id="info-memory">—</dd></div>
-          <div class="kv"><dt>CPU</dt><dd id="info-cpu">—</dd></div>
-          <div class="kv"><dt>Procesos</dt><dd id="info-pids">—</dd></div>
+          <div class="kv">
+            <dt>Memoria</dt>
+            <dd id="info-memory">—</dd>
+          </div>
+          <div class="kv">
+            <dt>CPU</dt>
+            <dd id="info-cpu">—</dd>
+          </div>
+          <div class="kv">
+            <dt>Procesos</dt>
+            <dd id="info-pids">—</dd>
+          </div>
         </dl>
       </div>
 
@@ -154,7 +190,10 @@
           a internet y sin visibilidad hacia los contenedores de otros
           estudiantes.
         </p>
-        <div class="kv"><dt>Nivel de seguridad</dt><dd class="mono-value">cgroups v2</dd></div>
+        <div class="kv">
+          <dt>Nivel de seguridad</dt>
+          <dd class="mono-value">cgroups v2</dd>
+        </div>
       </div>
 
       <div class="side-section">
@@ -190,19 +229,64 @@
     <div class="modal-card">
       <div class="modal-glow"></div>
       <div class="modal-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3ef0a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3ef0a5" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
           <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
           <path d="M4 22h16"></path>
-          <path d="M10 14.66V17c0 .55-.45 1-1 1H7.5c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h9c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H15c-.55 0-1-.45-1-1v-2.34"></path>
+          <path
+            d="M10 14.66V17c0 .55-.45 1-1 1H7.5c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h9c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H15c-.55 0-1-.45-1-1v-2.34">
+          </path>
           <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
         </svg>
       </div>
       <h2 class="modal-title">¡VULNERABILIDAD ENCONTRADA!</h2>
       <p class="modal-subtitle" id="victory-challenge-name">Reto Resuelto</p>
-      <p class="modal-desc" id="victory-message">Has explotado la vulnerabilidad con éxito y capturado la bandera legítima.</p>
+      <p class="modal-desc" id="victory-message">Has explotado la vulnerabilidad con éxito y capturado la bandera
+        legítima.</p>
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" id="btn-victory-close" onclick="document.getElementById('victory-modal').hidden = true">Continuar</button>
+        <button type="button" class="btn btn-primary" id="btn-victory-close"
+          onclick="document.getElementById('victory-modal').hidden = true">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="welcome-modal" data-autoshow="{{ mostrar_tutorial|yesno:'1,0' }}" hidden>
+    <div class="modal-card welcome-card">
+      <h2 class="modal-title">Bienvenido a ROOT_LABS<span class="sep">//</span>CTF</h2>
+      <p class="modal-subtitle welcome-intro">
+        Esta plataforma es un laboratorio de seguridad. Cada reto es un ejercicio visual en la terminal
+        con una vulnerabilidad real que corre en tu propio contenedor aislado.
+        Tu misión: explotarla y capturar la bandera (<code>FLAG&#123;...&#125;</code>).
+      </p>
+
+      <ol class="welcome-steps">
+        <li><span class="welcome-step-n">1</span>
+          <div><strong>Elige un reto</strong> del catálogo, agrupado por categoría OWASP.</div>
+        </li>
+        <li><span class="welcome-step-n">2</span>
+          <div><strong>Despliega la instancia</strong>: se crea un contenedor solo para ti.</div>
+        </li>
+        <li><span class="welcome-step-n">3</span>
+          <div><strong>Abre la consola</strong> y explora con los comandos de la guía del reto.</div>
+        </li>
+        <li><span class="welcome-step-n">4</span>
+          <div><strong>Explota la vulnerabilidad</strong> para que te revele tu bandera única.</div>
+        </li>
+        <li><span class="welcome-step-n">5</span>
+          <div><strong>Valida tu bandera</strong> en el campo de abajo. ¡Reto resuelto!</div>
+        </li>
+      </ol>
+
+      <p class="welcome-tip">
+        💡 Pasa el mouse sobre el <span class="owasp-info-demo">ⓘ</span> de cada categoría
+        (ej. <em>A01:2021 Broken Access Control</em>) para leer de qué trata esa
+        vulnerabilidad según OWASP. Tu bandera es única y personal: la de un
+        compañero no te sirve.
+      </p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btn-welcome-close">Entendido, empezar</button>
       </div>
     </div>
   </div>
@@ -212,72 +296,84 @@
       <h2 class="modal-title settings-title">Panel oculto</h2>
 
       <div class="settings-tabs" role="tablist">
-        <button type="button" class="settings-tab is-active" id="settings-tab-btn-config" data-tab="config">Configuración</button>
-        <button type="button" class="settings-tab" id="settings-tab-btn-instances" data-tab="instances">Instancias en vivo</button>
+        <button type="button" class="settings-tab is-active" id="settings-tab-btn-config"
+          data-tab="config">Configuración</button>
+        <button type="button" class="settings-tab" id="settings-tab-btn-instances" data-tab="instances">Instancias en
+          vivo</button>
         <button type="button" class="settings-tab" id="settings-tab-btn-users" data-tab="users">Usuarios</button>
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-config">
-      <div class="settings-field">
-        <label for="settings-inactivity">Umbral de inactividad (minutos)</label>
-        <div class="number-stepper">
-          <input type="number" id="settings-inactivity" min="1" step="1" />
-          <div class="number-stepper-arrows">
-            <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="1" aria-label="Aumentar">▲</button>
-            <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="-1" aria-label="Disminuir">▼</button>
+        <div class="settings-field">
+          <label for="settings-inactivity">Umbral de inactividad (minutos)</label>
+          <div class="number-stepper">
+            <input type="number" id="settings-inactivity" min="1" step="1" />
+            <div class="number-stepper-arrows">
+              <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="1"
+                aria-label="Aumentar">▲</button>
+              <button type="button" class="number-stepper-btn" data-target="settings-inactivity" data-step="-1"
+                aria-label="Disminuir">▼</button>
+            </div>
           </div>
         </div>
-      </div>
-      <p class="settings-section-label">Vida máxima por dificultad (minutos)</p>
+        <p class="settings-section-label">Vida máxima por dificultad (minutos)</p>
 
-      <div class="settings-field">
-        <label for="settings-time-basico">Básico</label>
-        <div class="number-stepper">
-          <input type="number" id="settings-time-basico" min="1" step="1" />
-          <div class="number-stepper-arrows">
-            <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="1" aria-label="Aumentar">▲</button>
-            <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="-1" aria-label="Disminuir">▼</button>
+        <div class="settings-field">
+          <label for="settings-time-basico">Básico</label>
+          <div class="number-stepper">
+            <input type="number" id="settings-time-basico" min="1" step="1" />
+            <div class="number-stepper-arrows">
+              <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="1"
+                aria-label="Aumentar">▲</button>
+              <button type="button" class="number-stepper-btn" data-target="settings-time-basico" data-step="-1"
+                aria-label="Disminuir">▼</button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="settings-field">
-        <label for="settings-time-intermedio">Intermedio</label>
-        <div class="number-stepper">
-          <input type="number" id="settings-time-intermedio" min="1" step="1" />
-          <div class="number-stepper-arrows">
-            <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="1" aria-label="Aumentar">▲</button>
-            <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="-1" aria-label="Disminuir">▼</button>
+        <div class="settings-field">
+          <label for="settings-time-intermedio">Intermedio</label>
+          <div class="number-stepper">
+            <input type="number" id="settings-time-intermedio" min="1" step="1" />
+            <div class="number-stepper-arrows">
+              <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="1"
+                aria-label="Aumentar">▲</button>
+              <button type="button" class="number-stepper-btn" data-target="settings-time-intermedio" data-step="-1"
+                aria-label="Disminuir">▼</button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="settings-field">
-        <label for="settings-time-dificil">Difícil</label>
-        <div class="number-stepper">
-          <input type="number" id="settings-time-dificil" min="1" step="1" />
-          <div class="number-stepper-arrows">
-            <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="1" aria-label="Aumentar">▲</button>
-            <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="-1" aria-label="Disminuir">▼</button>
+        <div class="settings-field">
+          <label for="settings-time-dificil">Difícil</label>
+          <div class="number-stepper">
+            <input type="number" id="settings-time-dificil" min="1" step="1" />
+            <div class="number-stepper-arrows">
+              <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="1"
+                aria-label="Aumentar">▲</button>
+              <button type="button" class="number-stepper-btn" data-target="settings-time-dificil" data-step="-1"
+                aria-label="Disminuir">▼</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="settings-field">
-        <label for="settings-lifetime">Vida máxima por defecto (horas) — retos fuera del catálogo</label>
-        <div class="number-stepper">
-          <input type="number" id="settings-lifetime" min="1" step="0.5" />
-          <div class="number-stepper-arrows">
-            <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="0.5" aria-label="Aumentar">▲</button>
-            <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="-0.5" aria-label="Disminuir">▼</button>
+        <div class="settings-field">
+          <label for="settings-lifetime">Vida máxima por defecto (horas) — retos fuera del catálogo</label>
+          <div class="number-stepper">
+            <input type="number" id="settings-lifetime" min="1" step="0.5" />
+            <div class="number-stepper-arrows">
+              <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="0.5"
+                aria-label="Aumentar">▲</button>
+              <button type="button" class="number-stepper-btn" data-target="settings-lifetime" data-step="-0.5"
+                aria-label="Disminuir">▼</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <p class="settings-feedback" id="settings-feedback" hidden></p>
+        <p class="settings-feedback" id="settings-feedback" hidden></p>
 
-      <div class="modal-actions settings-actions">
-        <button type="button" class="btn btn-ghost" id="btn-settings-cancel">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="btn-settings-save">Guardar</button>
-      </div>
+        <div class="modal-actions settings-actions">
+          <button type="button" class="btn btn-ghost" id="btn-settings-cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-settings-save">Guardar</button>
+        </div>
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-instances" hidden>
@@ -298,7 +394,9 @@
               </tr>
             </thead>
             <tbody id="instances-tbody">
-              <tr><td colspan="6" class="instances-empty">Cargando...</td></tr>
+              <tr>
+                <td colspan="6" class="instances-empty">Cargando...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -309,7 +407,8 @@
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-users" hidden>
-        <p class="settings-section-label" id="user-form-title" style="margin-top: 0; padding-top: 0; border-top: none;">Crear cuenta</p>
+        <p class="settings-section-label" id="user-form-title" style="margin-top: 0; padding-top: 0; border-top: none;">
+          Crear cuenta</p>
 
         <div class="settings-field">
           <label for="new-user-username">Usuario</label>
@@ -347,7 +446,9 @@
               </tr>
             </thead>
             <tbody id="users-tbody">
-              <tr><td colspan="4" class="instances-empty">Cargando...</td></tr>
+              <tr>
+                <td colspan="4" class="instances-empty">Cargando...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -359,4 +460,5 @@
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
   <script src="{% static 'ctf/terminal.js' %}"></script>
 </body>
+
 </html>

@@ -12,7 +12,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
 from . import challenges, docker_client
-from .models import Instance, PlatformSettings, SolvedChallenge
+from .models import Instance, OnboardingState, PlatformSettings, SolvedChallenge
 
 # Intentos de bandera erronea permitidos por instancia antes de destruirla.
 MAX_INTENTOS_BANDERA = 5
@@ -59,7 +59,24 @@ def contiene_palabra_obscena(nombre: str) -> bool:
 @login_required
 def terminal_page(request):
     """Página con la consola Xterm.js (ver SDD 4.5)."""
-    return render(request, "ctf/terminal.html")
+    estado, _ = OnboardingState.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "ctf/terminal.html",
+        {"mostrar_tutorial": not estado.tutorial_visto},
+    )
+
+
+@login_required
+@require_POST
+def tutorial_visto_view(request):
+    """Marca el tutorial de bienvenida como visto para este usuario, para
+    que no vuelva a aparecer solo (se puede reabrir a mano con el botón '?')."""
+    estado, _ = OnboardingState.objects.get_or_create(user=request.user)
+    if not estado.tutorial_visto:
+        estado.tutorial_visto = True
+        estado.save(update_fields=["tutorial_visto", "updated_at"])
+    return JsonResponse({"ok": True})
 
 
 @login_required
@@ -333,7 +350,7 @@ def manage_user_detail_view(request, user_id):
       - "eliminar": borra la cuenta.
       - "editar": cambia nombre, rol (is_staff) y opcionalmente la clave.
 
-    Salvaguarda contra quedarse sin acceso: no podés eliminar ni quitarte
+    Salvaguarda contra quedarse sin acceso: no puedes eliminar ni quitarte
     el rol staff a tu propia cuenta.
     """
     if not request.user.is_staff:
@@ -355,7 +372,7 @@ def manage_user_detail_view(request, user_id):
     if accion == "eliminar":
         if es_uno_mismo:
             return JsonResponse(
-                {"error": "No podés eliminar tu propia cuenta."}, status=400
+                {"error": "No puedes eliminar tu propia cuenta."}, status=400
             )
         nombre = objetivo.username
         objetivo.delete()
@@ -382,11 +399,11 @@ def manage_user_detail_view(request, user_id):
 
         if nuevo_rol is not None:
             quiere_staff = bool(nuevo_rol)
-            # No podés quitarte a vos mismo el rol staff: te dejaría sin
+            # No puedes quitarte a ti mismo el rol staff: te dejaría sin
             # acceso al panel en el acto.
             if es_uno_mismo and not quiere_staff:
                 return JsonResponse(
-                    {"error": "No podés quitarte a vos mismo el rol de staff."},
+                    {"error": "No puedes quitarte a ti mismo el rol de staff."},
                     status=400,
                 )
             objetivo.is_staff = quiere_staff

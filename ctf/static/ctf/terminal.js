@@ -20,6 +20,7 @@ const API = {
   liveInstances: "/api/platform-settings/instances/",
   destroyContainer: "/api/platform-settings/instances/destroy/",
   manageUsers: "/api/platform-settings/users/",
+  tutorialVisto: "/api/tutorial-visto/",
 };
 
 const el = {
@@ -71,6 +72,9 @@ const el = {
   destroyedToastClose: document.getElementById("destroyed-toast-close"),
   userChip: document.getElementById("user-chip"),
   settingsModal: document.getElementById("settings-modal"),
+  welcomeModal: document.getElementById("welcome-modal"),
+  welcomeCloseBtn: document.getElementById("btn-welcome-close"),
+  helpBtn: document.getElementById("btn-help"),
   settingsInactivity: document.getElementById("settings-inactivity"),
   settingsLifetime: document.getElementById("settings-lifetime"),
   settingsTimeBasico: document.getElementById("settings-time-basico"),
@@ -378,6 +382,29 @@ const ICONO_CATEGORIA = {
   A10: "🌐",
 };
 
+// Descripción de cada categoría del OWASP Top 10 (2021), para el tooltip ⓘ
+// del encabezado de categoría en el catálogo. Texto de referencia educativo.
+const DESCRIPCION_OWASP = {
+  A01: "Broken Access Control: la aplicación no verifica bien que un usuario tenga permiso para un recurso o acción, así que puede ver o modificar datos ajenos o usar funciones que no le corresponden (ej. cambiar un ID y leer el pedido de otro).",
+  A02: "Cryptographic Failures: datos sensibles expuestos por cifrado débil, ausente o mal usado — contraseñas sin sal, algoritmos obsoletos como MD5, o tráfico sin TLS.",
+  A03: "Injection: datos no confiables llegan a un intérprete (SQL, comandos del sistema, etc.) como parte de una consulta, permitiendo ejecutar acciones no previstas o leer datos sin autorización.",
+  A04: "Insecure Design: la falla está en el diseño y la lógica de negocio, no en el código — por ejemplo, no prever límites de uso o flujos de abuso. No se arregla con un parche: falta un control que nunca se diseñó.",
+  A05: "Security Misconfiguration: configuraciones inseguras — valores por defecto peligrosos, permisos de más, servicios innecesarios, errores verbosos o archivos sensibles (backups) accesibles.",
+  A06: "Vulnerable and Outdated Components: usar librerías, frameworks o dependencias con vulnerabilidades conocidas o sin soporte; la app hereda las fallas de esos componentes.",
+  A07: "Identification and Authentication Failures: debilidades en el login que permiten suplantar identidad — sin límite de intentos, contraseñas débiles, o manejo de sesión inseguro (fuerza bruta posible).",
+  A08: "Software and Data Integrity Failures: confiar en código o datos sin verificar su integridad — actualizaciones sin firmar o deserialización insegura (pickle) — lo que permite ejecutar código malicioso.",
+  A09: "Security Logging and Monitoring Failures: falta o mal manejo de registros y alertas, que impide detectar y responder a ataques a tiempo — o, peor, deja datos sensibles en los propios logs.",
+  A10: "Server-Side Request Forgery (SSRF): el servidor hace peticiones a URLs que controla el atacante sin validarlas, alcanzando recursos internos que no deberían ser accesibles desde afuera.",
+};
+
+function escaparAtributo(texto) {
+  return String(texto)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function agruparPorCategoria(retos) {
   const grupos = new Map();
   retos.forEach((reto) => {
@@ -445,10 +472,12 @@ function renderChallengePicker(disponibles) {
     const head = document.createElement("div");
     head.className = "category-head";
     const prefijo = grupo.codigo.split(":")[0];
+    const descOwasp = DESCRIPCION_OWASP[prefijo] || "";
     head.innerHTML = `
       <span class="category-icon">${ICONO_CATEGORIA[prefijo] || "🛡"}</span>
       <span class="category-code">${grupo.codigo}</span>
       <span class="category-name">${grupo.nombre}</span>
+      ${descOwasp ? `<span class="owasp-info" tabindex="0" role="note" data-owasp="${escaparAtributo(descOwasp)}" aria-label="Qué es ${escaparAtributo(grupo.nombre)} según OWASP">ⓘ</span>` : ""}
       <span class="category-count">${grupo.retos.length} reto${grupo.retos.length === 1 ? "" : "s"}</span>
     `;
     seccion.appendChild(head);
@@ -853,6 +882,91 @@ if (el.victoryCloseBtn) {
 }
 
 /*
+ * Tutorial de bienvenida. Se muestra solo la primera vez (el backend pasa
+ * `mostrar_tutorial` -> data-autoshow="1", y se marca visto en la BD al
+ * cerrarlo). El botón "?" del topbar lo reabre cuando quieran, sin volver
+ * a tocar la BD.
+ */
+if (el.welcomeModal) {
+  let tutorialMarcadoVisto = false;
+
+  const marcarTutorialVisto = async () => {
+    if (tutorialMarcadoVisto) return;
+    tutorialMarcadoVisto = true;
+    try {
+      await callApi(API.tutorialVisto, "POST");
+    } catch (_) {
+      // Si falla el marcado no es grave: a lo sumo reaparece la próxima vez.
+    }
+  };
+
+  const abrirTutorial = () => {
+    el.welcomeModal.hidden = false;
+  };
+  const cerrarTutorial = () => {
+    el.welcomeModal.hidden = true;
+    marcarTutorialVisto();
+  };
+
+  if (el.welcomeCloseBtn) el.welcomeCloseBtn.addEventListener("click", cerrarTutorial);
+  // Cerrar al clickear el fondo (fuera de la tarjeta).
+  el.welcomeModal.addEventListener("click", (evento) => {
+    if (evento.target === el.welcomeModal) cerrarTutorial();
+  });
+  // Botón "?" del topbar: reabrir el tutorial a demanda.
+  if (el.helpBtn) el.helpBtn.addEventListener("click", abrirTutorial);
+
+  // Primera vez: mostrarlo solo. Al cerrarse queda marcado como visto.
+  if (el.welcomeModal.dataset.autoshow === "1") abrirTutorial();
+}
+
+/*
+ * Tooltip flotante para el ⓘ de cada categoría OWASP en el catálogo. Se
+ * posiciona con position:fixed vía JS para que ningún contenedor con scroll
+ * lo recorte (un tooltip CSS anidado sí se recortaría).
+ */
+if (el.picker) {
+  const tip = document.createElement("div");
+  tip.className = "owasp-tooltip-float";
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.appendChild(tip);
+
+  const mostrarTip = (info) => {
+    const desc = info.getAttribute("data-owasp");
+    if (!desc) return;
+    tip.textContent = desc;
+    tip.hidden = false;
+    const r = info.getBoundingClientRect();
+    const ancho = Math.min(320, window.innerWidth - 24);
+    tip.style.width = `${ancho}px`;
+    let left = r.left;
+    if (left + ancho > window.innerWidth - 12) left = window.innerWidth - 12 - ancho;
+    if (left < 12) left = 12;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${r.bottom + 8}px`;
+  };
+  const ocultarTip = () => {
+    tip.hidden = true;
+  };
+
+  el.picker.addEventListener("mouseover", (e) => {
+    const info = e.target.closest && e.target.closest(".owasp-info");
+    if (info) mostrarTip(info);
+  });
+  el.picker.addEventListener("mouseout", (e) => {
+    if (e.target.closest && e.target.closest(".owasp-info")) ocultarTip();
+  });
+  el.picker.addEventListener("focusin", (e) => {
+    const info = e.target.closest && e.target.closest(".owasp-info");
+    if (info) mostrarTip(info);
+  });
+  el.picker.addEventListener("focusout", ocultarTip);
+  // Al scrollear, ocultarlo para que no quede flotando en una posición vieja.
+  window.addEventListener("scroll", ocultarTip, true);
+}
+
+/*
  * Panel oculto: 5 clicks seguidos (menos de 1.5s entre cada uno) sobre
  * el propio nombre de usuario abren el ajuste del watchdog. Que esté
  * escondido es solo para que no cualquiera se tropiece con él por
@@ -1056,7 +1170,7 @@ function renderUsersTable(usuarios) {
   el.usersTbody.innerHTML = usuarios
     .map((u) => {
       const rolLabel = u.is_staff ? "Quitar staff" : "Hacer staff";
-      // No podés degradarte ni eliminarte a vos mismo (te dejaría sin
+      // No puedes degradarte ni eliminarte a ti mismo (te dejaría sin
       // acceso al panel), así que esos botones no aparecen en tu fila.
       const rolBtn = u.is_self
         ? ""
@@ -1066,7 +1180,7 @@ function renderUsersTable(usuarios) {
         : `<button type="button" class="btn-user-accion is-danger" data-accion="eliminar" data-id="${u.id}" data-nombre="${u.username}">Eliminar</button>`;
       return `
     <tr>
-      <td>${u.username}${u.is_self ? ' <span class="user-self-tag">vos</span>' : ""}</td>
+      <td>${u.username}${u.is_self ? ' <span class="user-self-tag">tú</span>' : ""}</td>
       <td>${u.is_staff ? '<span class="user-staff-tag">Staff</span>' : "—"}</td>
       <td>${new Date(u.date_joined).toLocaleDateString("es")}</td>
       <td class="user-acciones">
