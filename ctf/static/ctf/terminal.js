@@ -108,6 +108,10 @@ let filtroDificultad = "todos";
 // Distingue un cierre pedido por el usuario (al destruir) de una caída,
 // para que el mensaje final no lo pise el handler de `onclose`.
 let closingOnPurpose = false;
+// Reintentos de reconexión automática tras una caída no intencional (ej.
+// parpadeo de red en un hotspot). Se resetea a 0 en cada `onopen`.
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 4;
 
 const term = new Terminal({
   cursorBlink: true,
@@ -550,34 +554,53 @@ if (el.destroyedToastClose) {
   });
 }
 
-async function resincronizar() {
+async function intentarReconectar() {
   /*
-   * La consola se cortó sin que el usuario lo pidiera: o escribió `exit`,
-   * o el watchdog destruyó su instancia. Hay que volver a preguntarle al
-   * servidor, porque si no la interfaz seguiría mostrando un contenedor
-   * inexistente con el botón de desplegar bloqueado, sin salida posible.
+   * La consola se cortó sin que el usuario lo pidiera. Dos causas posibles:
+   *  a) la instancia sigue viva pero la conexión se cayó (parpadeo de red,
+   *     suspensión de la laptop, hotspot inestable) -> se reconecta sola.
+   *  b) la instancia ya no existe (el estudiante escribió `exit`, o el
+   *     watchdog la destruyó) -> no hay nada a que reconectarse.
    *
-   * Se consulta dos veces: al destruir una instancia, el contenedor muere
-   * antes de que se borre su fila, así que la primera consulta puede
-   * llegar cuando el servidor todavía la reporta activa.
+   * Antes de reintentar se consulta el estado: solo tiene sentido
+   * reconectar si el contenedor todavía está. Si no, se cae al mismo
+   * manejo de siempre (limpiar la terminal y avisar). Cada intento
+   * espera un poco más (backoff) para no martillar al servidor.
+   *
+   * Ojo: reconectar abre un `exec` NUEVO -> es un shell fresco, no la
+   * misma sesión (se pierde cwd/procesos/historial), igual que recargar
+   * la página. El `terminate_console` del backend ya limpió el shell
+   * viejo al cerrarse la conexión anterior, así que no se acumulan.
    */
-  for (const espera of [0, 3000]) {
-    if (espera) await new Promise((r) => setTimeout(r, espera));
-    try {
-      const status = await refresh();
-      if (!status.active) {
-        term.reset();
-        showTerminal(false);
-        setStatus("La instancia ya no existe", null);
-        mostrarToastDestruccion();
-        return;
-      }
-      setStatus("Consola cerrada — recargá para reabrirla", "warn");
-    } catch {
-      setStatus("Consola desconectada", null);
-      return;
-    }
+  if (closingOnPurpose) return;
+
+  let status;
+  try {
+    status = await refresh();
+  } catch {
+    setStatus("Consola desconectada", null);
+    return;
   }
+
+  if (!status.active) {
+    term.reset();
+    showTerminal(false);
+    setStatus("La instancia ya no existe", null);
+    mostrarToastDestruccion();
+    return;
+  }
+
+  if (reconnectAttempts >= MAX_RECONNECT) {
+    setStatus("Consola cerrada — recargá para reabrirla", "warn");
+    return;
+  }
+
+  reconnectAttempts += 1;
+  const espera = Math.min(1000 * 2 ** (reconnectAttempts - 1), 8000);
+  setStatus(`Reconectando (intento ${reconnectAttempts}/${MAX_RECONNECT})…`, "warn");
+  await new Promise((r) => setTimeout(r, espera));
+  if (closingOnPurpose) return;
+  connectWebSocket();
 }
 
 function connectWebSocket() {
@@ -586,6 +609,7 @@ function connectWebSocket() {
   socket.binaryType = "arraybuffer";
 
   socket.onopen = () => {
+    reconnectAttempts = 0;
     setStatus("Consola conectada", "ok");
     showTerminal(true);
     sendResize();
@@ -600,7 +624,7 @@ function connectWebSocket() {
     renderSessionInfo();
     if (closingOnPurpose) return;
 
-    resincronizar();
+    intentarReconectar();
   };
 
   socket.onerror = () => setStatus("Error de conexión", "down");
@@ -711,7 +735,7 @@ async function refresh() {
   el.stop.disabled = !status.active;
   // Para el countdown, que se apague apenas se sabe que ya no está
   // activa. Para el toast de "se destruyó sola" (mostrarToastDestruccion,
-  // en resincronizar) hace falta el último snapshot ACTIVO, así que ese
+  // en intentarReconectar) hace falta el último snapshot ACTIVO, así que ese
   // se guarda aparte y nunca se limpia con esto.
   ultimoStatusActivo = status.active ? status : null;
   if (status.active) ultimaInstanciaActiva = status;
