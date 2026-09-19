@@ -544,7 +544,7 @@ function mostrarToastDestruccion() {
   }
 
   el.destroyedToastText.textContent =
-    `El watchdog la destruyó automáticamente ${motivo}. Desplegá una nueva si la necesitás.`;
+    `El watchdog la destruyó automáticamente ${motivo}. Despliega una nueva si la necesitas.`;
   el.destroyedToast.hidden = false;
 }
 
@@ -591,7 +591,7 @@ async function intentarReconectar() {
   }
 
   if (reconnectAttempts >= MAX_RECONNECT) {
-    setStatus("Consola cerrada — recargá para reabrirla", "warn");
+    setStatus("Consola cerrada — recarga para reabrirla", "warn");
     return;
   }
 
@@ -658,7 +658,7 @@ new ResizeObserver(() => {
 
 el.start.addEventListener("click", async () => {
   if (!selectedChallenge) {
-    setStatus("Elegí un reto antes de desplegar", "warn");
+    setStatus("Elige un reto antes de desplegar", "warn");
     return;
   }
   el.start.disabled = true;
@@ -1049,7 +1049,7 @@ if (el.createUserBtn) {
         password,
         is_staff: el.newUserIsStaff.checked,
       });
-      el.usersFeedback.textContent = `Usuario "${username}" creado. Anotá la clave -- no se puede volver a ver.`;
+      el.usersFeedback.textContent = `Usuario "${username}" creado. Anota la clave -- no se puede volver a ver.`;
       el.usersFeedback.className = "settings-feedback is-success";
       el.usersFeedback.hidden = false;
       el.newUserUsername.value = "";
@@ -1094,7 +1094,7 @@ if (el.settingsSaveBtn) {
       (v) => v && v > 0
     );
     if (!todosValidos) {
-      el.settingsFeedback.textContent = "Ingresá valores válidos, mayores a 0, en todos los campos.";
+      el.settingsFeedback.textContent = "Ingresa valores válidos, mayores a 0, en todos los campos.";
       el.settingsFeedback.className = "settings-feedback is-error";
       el.settingsFeedback.hidden = false;
       return;

@@ -33,7 +33,7 @@ def platform_settings_view(request):
     directo a la URL sin ser staff.
     """
     if not request.user.is_staff:
-        return JsonResponse({"error": "No tenés permiso para ver esto"}, status=403)
+        return JsonResponse({"error": "No tienes permiso para ver esto"}, status=403)
 
     campos = (
         "inactivity_timeout_seconds",
@@ -87,7 +87,7 @@ def live_instances_view(request):
     Mismo control de acceso que `platform_settings_view`: solo staff.
     """
     if not request.user.is_staff:
-        return JsonResponse({"error": "No tenés permiso para ver esto"}, status=403)
+        return JsonResponse({"error": "No tienes permiso para ver esto"}, status=403)
 
     try:
         contenedores = docker_client.list_ctf_containers()
@@ -171,7 +171,7 @@ def destroy_container_view(request):
     mano (que fue justo lo que causó el incidente del Día 15).
     """
     if not request.user.is_staff:
-        return JsonResponse({"error": "No tenés permiso para hacer esto"}, status=403)
+        return JsonResponse({"error": "No tienes permiso para hacer esto"}, status=403)
 
     try:
         data = json.loads(request.body) if request.body else {}
@@ -208,7 +208,7 @@ def manage_users_view(request):
     resto del panel: `is_staff`.
     """
     if not request.user.is_staff:
-        return JsonResponse({"error": "No tenés permiso para hacer esto"}, status=403)
+        return JsonResponse({"error": "No tienes permiso para hacer esto"}, status=403)
 
     User = get_user_model()
 
@@ -387,7 +387,7 @@ def submit_flag(request):
         return JsonResponse(
             {
                 "success": False,
-                "error": "Bandera incorrecta. ¡Seguí investigando!",
+                "error": "Bandera incorrecta. ¡Sigue investigando!",
             },
             status=400,
         )

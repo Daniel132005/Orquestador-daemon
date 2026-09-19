@@ -56,9 +56,9 @@ CHALLENGES = {
         "objective": "Iniciar sesión como admin sin conocer su clave.",
         "first_step": "sudo python3 /app/app.py",
         "expected_result": (
-            "Te pide usuario y clave. Si probás con datos normales (por "
-            "ejemplo invitado / invitado123) entrás como invitado, sin "
-            "flag. El truco está en qué escribís en el campo usuario."
+            "Te pide usuario y clave. Si pruebas con datos normales (por "
+            "ejemplo invitado / invitado123) entras como invitado, sin "
+            "flag. El truco está en qué escribes en el campo usuario."
         ),
     },
     "idor": {
@@ -76,7 +76,7 @@ CHALLENGES = {
         "first_step": "sudo python3 /app/pedidos.py 1001",
         "expected_result": (
             "Vas a ver TU pedido (el de \"invitado\"). Nada te impide "
-            "pedir otros números de ID -- probá algunos hasta encontrar "
+            "pedir otros números de ID -- prueba algunos hasta encontrar "
             "uno que no sea de \"invitado\"."
         ),
     },
@@ -92,7 +92,7 @@ CHALLENGES = {
         "first_step": "sudo python3 /app/login.py admin 123456",
         "expected_result": (
             "Dice \"Clave incorrecta\" (123456 no es la clave real). Tu "
-            "wordlist está en ~/wordlist.txt -- probá cada clave de ahí "
+            "wordlist está en ~/wordlist.txt -- prueba cada clave de ahí "
             "hasta que una funcione."
         ),
     },
@@ -108,8 +108,8 @@ CHALLENGES = {
         "first_step": "ls -la ~",
         "expected_result": (
             "Vas a ver un archivo en tu carpeta que no debería estar ahí "
-            "(una copia de seguridad de una configuración). Abrilo -- "
-            "adentro están las credenciales que necesitás para el panel."
+            "(una copia de seguridad de una configuración). Ábrelo -- "
+            "adentro están las credenciales que necesitas para el panel."
         ),
     },
     "diseno-inseguro": {
@@ -182,8 +182,8 @@ CHALLENGES = {
         "objective": "Usar el token filtrado del admin para autenticarte.",
         "first_step": "cat ~/sesiones.log",
         "expected_result": (
-            "Vas a ver líneas con tokens de distintos usuarios. Buscá la "
-            "línea de \"admin\" y usá ese token con la app."
+            "Vas a ver líneas con tokens de distintos usuarios. Busca la "
+            "línea de \"admin\" y usa ese token con la app."
         ),
     },
     "integridad-datos": {
@@ -201,7 +201,7 @@ CHALLENGES = {
         "first_step": "sudo python3 /app/revisar_backup.py",
         "expected_result": (
             "Dice que no hay backup en /tmp/backup.dat todavía. Primero "
-            "tenés que crear ese archivo vos mismo con Python, antes de "
+            "tienes que crear ese archivo tú mismo con Python, antes de "
             "correr este comando de nuevo."
         ),
     },
@@ -220,7 +220,7 @@ CHALLENGES = {
         "first_step": "sudo python3 /app/previsualizar.py http://metadata.ctf.local/token",
         "expected_result": (
             "Dice \"Acceso bloqueado: es un recurso interno\". El bloqueo "
-            "compara el texto tal cual como lo escribiste -- probá "
+            "compara el texto tal cual como lo escribiste -- prueba "
             "escribir esa misma URL de otra forma."
         ),
     },
