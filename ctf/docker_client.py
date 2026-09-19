@@ -106,6 +106,21 @@ def create_container(
             "ReadonlyRootfs": True,
             "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
             "AutoRemove": False,
+            # `PidsLimit` frena una bomba de PROCESOS, pero un descriptor de
+            # archivo es otro recurso del kernel: sin este techo, `nofile`
+            # queda en ~1M (el default del daemon), suficiente para que un
+            # bucle que abre archivos degrade el contenedor. 1024/2048 es de
+            # sobra para cualquier reto y acota ese recurso explícitamente.
+            "Ulimits": [{"Name": "nofile", "Soft": 1024, "Hard": 2048}],
+            # La salida del estudiante viaja por el `exec` (no por el log del
+            # contenedor), así que hoy esto no crece -- pero el stdout del
+            # proceso principal SÍ va a un json-file en el disco del host, sin
+            # tope por defecto. Capearlo es un seguro barato por si algún reto
+            # llegara a correr su app como proceso principal.
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {"max-size": "10m", "max-file": "3"},
+            },
             # El PID 1 de estos contenedores es `/bin/sh` (ver Dockerfile de
             # cada reto), que nunca hace `wait()` sobre hijos huérfanos. Sin
             # esto, una fork bomb deja zombis para siempre pegados contra
