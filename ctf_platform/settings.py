@@ -144,9 +144,12 @@ INSTANCE_INACTIVITY_TIMEOUT_SECONDS = int(
     os.environ.get("CTF_INACTIVITY_TIMEOUT_SECONDS", str(15 * 60))
 )
 
-# Cada cuánto barre el watchdog buscando instancias vencidas.
+# Cada cuánto barre el watchdog buscando instancias vencidas. A 5s la
+# destrucción por vida máxima / inactividad se siente casi inmediata (el
+# countdown llega a 0 y el contenedor cae a lo sumo 5s después, no 60);
+# el costo de barrer más seguido es despreciable con pocas instancias.
 CTF_WATCHDOG_INTERVAL_SECONDS = int(
-    os.environ.get("CTF_WATCHDOG_INTERVAL_SECONDS", "60")
+    os.environ.get("CTF_WATCHDOG_INTERVAL_SECONDS", "5")
 )
 
 # Vida máxima absoluta de una instancia, sin importar su actividad (ver

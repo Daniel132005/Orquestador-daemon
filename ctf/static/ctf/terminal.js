@@ -619,10 +619,23 @@ function connectWebSocket() {
     term.write(new Uint8Array(event.data));
   };
 
-  socket.onclose = () => {
+  socket.onclose = (event) => {
     socket = null;
     renderSessionInfo();
     if (closingOnPurpose) return;
+
+    // Códigos con que el servidor rechaza deliberadamente la conexión: la
+    // instancia ya no existe (4004) o no se pudo abrir el exec porque el
+    // contenedor se está destruyendo (4002). Reintentar no tiene sentido
+    // -- es destrucción real (watchdog / `exit`), no un parpadeo de red.
+    // Se corta al instante y se avisa, sin gastar los 4 reintentos.
+    if (event.code === 4004 || event.code === 4002) {
+      term.reset();
+      showTerminal(false);
+      setStatus("La instancia ya no existe", null);
+      mostrarToastDestruccion();
+      return;
+    }
 
     intentarReconectar();
   };
