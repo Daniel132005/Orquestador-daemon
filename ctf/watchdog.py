@@ -56,7 +56,17 @@ def sweep_stale_instances() -> int:
     for instance in Instance.objects.all():
         inactive_for = (ahora - instance.last_activity).total_seconds()
         alive_for = (ahora - instance.created_at).total_seconds()
-        limite_vida_seconds = challenges.time_limit_for(instance.challenge)
+        # Se calcula el límite con el `config` ya traído arriba, en vez de
+        # `challenges.time_limit_for()`, que consulta `PlatformSettings`
+        # otra vez por cada instancia (patrón N+1). Con esto el barrido hace
+        # un número fijo de consultas, no una por instancia. `get_challenge`
+        # lee el catálogo en memoria, sin tocar la base.
+        reto = challenges.get_challenge(instance.challenge)
+        limite_vida_seconds = (
+            config.time_limit_for_difficulty(reto["difficulty"])
+            if reto
+            else config.max_lifetime_seconds
+        )
 
         vencida_por_inactividad = instance.last_activity < limite_inactividad
         vencida_por_vida_maxima = alive_for >= limite_vida_seconds
