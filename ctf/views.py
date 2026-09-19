@@ -601,9 +601,9 @@ def submit_flag(request):
             "challenge_name": reto["name"],
             "challenge_slug": slug,
             "message": (
-                f"¡Vulnerabilidad encontrada! Has resuelto {reto['name']}. Sumaste +{xp_awarded} XP."
+                f"¡Vulnerabilidad encontrada! Has resuelto {reto['name']}."
                 if newly_solved
-                else f"¡Bandera correcta! Ya habías completado este reto previamente."
+                else "¡Bandera correcta! Ya habías completado este reto previamente."
             ),
         }
     )

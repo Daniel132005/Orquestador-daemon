@@ -55,7 +55,6 @@ const el = {
   guideFirstStep: document.getElementById("guide-first-step"),
   guideExpected: document.getElementById("guide-expected"),
   guideCopy: document.getElementById("guide-copy"),
-  xpDisplay: document.getElementById("user-xp-display"),
   flagBar: document.getElementById("flag-bar"),
   flagForm: document.getElementById("flag-form"),
   flagInput: document.getElementById("flag-input"),
@@ -64,7 +63,6 @@ const el = {
   flagFeedback: document.getElementById("flag-feedback"),
   victoryModal: document.getElementById("victory-modal"),
   victoryChallengeName: document.getElementById("victory-challenge-name"),
-  victoryXpGain: document.getElementById("victory-xp-gain"),
   victoryMessage: document.getElementById("victory-message"),
   victoryCloseBtn: document.getElementById("btn-victory-close"),
   countdownBadge: document.getElementById("countdown-badge"),
@@ -270,10 +268,6 @@ function renderInfo(status) {
   el.timeout.textContent = formatTimeout(status.inactivity_timeout_seconds);
   el.maxLifetime.textContent = formatTimeout(status.max_lifetime_seconds);
 
-  if (status.user_xp !== undefined && el.xpDisplay) {
-    el.xpDisplay.textContent = status.user_xp;
-  }
-
   if (el.flagBar) {
     el.flagBar.hidden = !status.active;
     if (status.active) {
@@ -413,7 +407,6 @@ function crearTarjetaReto(reto, indice = 0) {
     <div class="challenge-card-head">
       <span class="challenge-card-name">${reto.name}</span>
       <span class="difficulty-tag is-${reto.difficulty}">${NOMBRE_DIFICULTAD[reto.difficulty] || reto.difficulty}</span>
-      <span class="xp-tag">+${reto.xp || 100} XP</span>
       ${reto.time_limit_seconds ? `<span class="time-limit-tag" title="Vida máxima de la instancia">⏱ ${formatTimeout(reto.time_limit_seconds)}</span>` : ""}
       ${reto.solved ? '<span class="solved-tag">✓ Resuelto</span>' : ""}
     </div>
@@ -814,15 +807,10 @@ if (el.flagForm) {
         el.flagFeedback.hidden = false;
         el.flagInput.value = "";
 
-        if (res.total_xp !== undefined && el.xpDisplay) {
-          el.xpDisplay.textContent = res.total_xp;
-        }
-
         el.flagStatusBadge.textContent = "✓ Resuelto";
         el.flagStatusBadge.className = "flag-bar-status is-solved";
 
         el.victoryChallengeName.textContent = res.challenge_name || "Reto Completado";
-        el.victoryXpGain.textContent = res.newly_solved ? `+${res.xp_awarded} XP` : "✓ Ya Resuelto";
         el.victoryMessage.textContent = res.message;
         el.victoryModal.hidden = false;
 
