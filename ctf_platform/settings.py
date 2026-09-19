@@ -6,11 +6,30 @@ sección 7 (Decisiones de Diseño) para el porqué de InMemoryChannelLayer.
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key")
+# Este default solo sirve para desarrollo local (DEBUG=True). Vive en el
+# código fuente, así que es PÚBLICO: nunca debe usarse en producción.
+_INSECURE_SECRET_KEY = "dev-only-insecure-secret-key"
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_SECRET_KEY)
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# La SECRET_KEY firma las cookies de sesión y los tokens CSRF. Con el default
+# público, cualquiera podría forjar una cookie que diga "soy staff" y entrar al
+# panel oculto sin conocer ninguna clave -- y el chequeo `is_staff` no lo
+# frenaría, porque la cookie sería válida. Por eso se aborta el arranque antes
+# que servir en producción (DEBUG=False) con la clave de desarrollo.
+if not DEBUG and SECRET_KEY == _INSECURE_SECRET_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY no está definida y DEBUG=False. Definí una clave "
+        "aleatoria antes de desplegar, por ejemplo:\n"
+        "  python -c \"import secrets; print(secrets.token_urlsafe(64))\"\n"
+        "y pasala en la variable de entorno DJANGO_SECRET_KEY."
+    )
 
 INSTALLED_APPS = [
     "django.contrib.admin",
