@@ -106,6 +106,15 @@ def create_container(
             "ReadonlyRootfs": True,
             "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
             "AutoRemove": False,
+            # El PID 1 de estos contenedores es `/bin/sh` (ver Dockerfile de
+            # cada reto), que nunca hace `wait()` sobre hijos huérfanos. Sin
+            # esto, una fork bomb deja zombis para siempre pegados contra
+            # `PidsLimit` -- PidsLimit sí evita que tumbe el host, pero el
+            # cupo de PIDs queda agotado de forma permanente y el estudiante
+            # no puede seguir usando su propia consola (verificado: hasta
+            # `sudo` deja de poder arrancar el reto). `Init: true` mete un
+            # init mínimo (tini) como PID 1 real, que sí cosecha zombis.
+            "Init": True,
         },
     }
     response = _check(
