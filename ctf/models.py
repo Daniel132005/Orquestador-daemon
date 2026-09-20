@@ -32,6 +32,38 @@ class Instance(models.Model):
         return f"Instance(user={self.user_id}, container={self.container_id[:12]})"
 
 
+class InstanceDestructionNotice(models.Model):
+    """
+    Aviso de un solo uso para explicarle al frontend POR QUÉ se destruyó
+    su instancia, en los casos donde el navegador no tiene forma de
+    saberlo por sí mismo: lo destruyó un administrador, o el watchdog por
+    inactividad/vida máxima. La destrucción manual (el propio usuario le
+    da a "Destruir") y la destrucción por exceder el límite de intentos
+    de bandera NO generan aviso: en esos casos el navegador ya conoce el
+    motivo porque fue su propia petición la que lo causó.
+
+    `instance_status` lo consume (lee y borra) la primera vez que
+    encuentra al usuario sin instancia activa, así se muestra una sola vez.
+    """
+
+    class Motivo(models.TextChoices):
+        ADMIN = "admin", "Destruida por un administrador"
+        INACTIVIDAD = "inactividad", "Destruida por inactividad"
+        VIDA_MAXIMA = "vida_maxima", "Alcanzó su tiempo máximo"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="destruction_notices",
+    )
+    motivo = models.CharField(max_length=20, choices=Motivo.choices)
+    challenge_slug = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"DestructionNotice(user={self.user_id}, motivo={self.motivo})"
+
+
 class SolvedChallenge(models.Model):
     """
     Registro persistente de retos completados y XP ganado por usuario.

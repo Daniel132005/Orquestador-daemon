@@ -14,7 +14,7 @@ from django.db import close_old_connections
 from django.utils import timezone
 
 from . import challenges, docker_client
-from .models import Instance, PlatformSettings
+from .models import Instance, InstanceDestructionNotice, PlatformSettings
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,19 @@ def sweep_stale_instances() -> int:
             )
             continue
 
+        # El navegador del estudiante no tiene forma de distinguir esto de
+        # cualquier otra desconexión: se deja un aviso de un solo uso para
+        # que `instance_status` le cuente el motivo real la próxima vez que
+        # consulte su estado.
+        InstanceDestructionNotice.objects.create(
+            user=instance.user,
+            motivo=(
+                InstanceDestructionNotice.Motivo.VIDA_MAXIMA
+                if vencida_por_vida_maxima
+                else InstanceDestructionNotice.Motivo.INACTIVIDAD
+            ),
+            challenge_slug=instance.challenge,
+        )
         instance.delete()
         destroyed += 1
 

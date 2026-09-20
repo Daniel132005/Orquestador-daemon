@@ -87,7 +87,6 @@ const el = {
   tourNext: document.getElementById("tour-next"),
   tourReplayBtn: document.getElementById("btn-tour"),
   settingsInactivity: document.getElementById("settings-inactivity"),
-  settingsLifetime: document.getElementById("settings-lifetime"),
   settingsTimeBasico: document.getElementById("settings-time-basico"),
   settingsTimeIntermedio: document.getElementById("settings-time-intermedio"),
   settingsTimeDificil: document.getElementById("settings-time-dificil"),
@@ -611,14 +610,54 @@ function resetUIsinInstancia() {
 }
 
 function mostrarInstanciaDestruida({ toast = true, statusText = "La instancia ya no existe" } = {}) {
+  // Una vez mostrado CUALQUIER mensaje de "la instancia ya no existe", no
+  // hay nada más a que reconectarse: se corta acá para que un cierre de
+  // WebSocket que llegue después (el contenedor tarda un poco en morir del
+  // todo) no vuelva a pasar por acá y pise este mensaje con el genérico.
+  closingOnPurpose = true;
   term.reset();
   showTerminal(false);
   resetUIsinInstancia();
   setStatus(statusText, toast ? null : "warn");
   // El toast del watchdog no aplica cuando la destrucción tuvo otra causa
-  // explicada aparte (ej. límite de intentos de bandera): en ese caso se
-  // llama con toast:false.
+  // explicada aparte (ej. límite de intentos de bandera, o un aviso
+  // específico de destroyed_notice): en esos casos se llama con toast:false.
   if (toast) mostrarToastDestruccion();
+}
+
+// Motivo -> mensaje de estado, para destrucciones que el navegador no
+// puede explicar por sí mismo (las causó otra cosa: un admin o el
+// watchdog). Ver InstanceDestructionNotice en el backend.
+const MENSAJE_POR_MOTIVO = {
+  admin: "Un administrador destruyó tu instancia.",
+  inactividad: "Tu instancia se destruyó por inactividad.",
+  vida_maxima: "Tu instancia alcanzó su tiempo máximo y se destruyó.",
+};
+
+function mostrarAvisoDestruccion(status) {
+  const aviso = status && status.destroyed_notice;
+  if (aviso && MENSAJE_POR_MOTIVO[aviso.reason]) {
+    mostrarInstanciaDestruida({ toast: false, statusText: MENSAJE_POR_MOTIVO[aviso.reason] });
+  } else {
+    // Sin aviso específico (ej. Docker se cayó solo, sin que watchdog ni
+    // admin mediaran): se mantiene el mensaje genérico como respaldo.
+    mostrarInstanciaDestruida();
+  }
+}
+
+async function avisarDestruccionInmediata() {
+  // Ya se sabe con certeza que no hay nada a que reconectarse (código
+  // 4004/4002, o la vida máxima ya venció): se consulta el estado una vez
+  // más para poder mostrar el motivo real (destroyed_notice) en vez de
+  // saltar directo al mensaje genérico.
+  let status;
+  try {
+    status = await refresh();
+  } catch {
+    mostrarInstanciaDestruida();
+    return;
+  }
+  mostrarAvisoDestruccion(status);
 }
 
 function vidaMaximaAgotada() {
@@ -661,7 +700,7 @@ async function intentarReconectar() {
   }
 
   if (!status.active) {
-    mostrarInstanciaDestruida();
+    mostrarAvisoDestruccion(status);
     return;
   }
 
@@ -706,7 +745,7 @@ function connectWebSocket() {
     //    watchdog el que la está destruyendo).
     // En esos casos se avisa al instante, sin mostrar "Reconectando".
     if (event.code === 4004 || event.code === 4002 || vidaMaximaAgotada()) {
-      mostrarInstanciaDestruida();
+      avisarDestruccionInmediata();
       return;
     }
 
@@ -756,6 +795,10 @@ el.start.addEventListener("click", async () => {
   if (el.flagInput) el.flagInput.value = "";
   try {
     await callApi(API.start, "POST", { challenge: selectedChallenge });
+    // Instancia nueva: cualquier "no reconectar más" de la anterior (ya
+    // destruida) queda sin efecto -- de acá en más sí interesa reconectar
+    // si esta instancia nueva se corta.
+    closingOnPurpose = false;
     await refresh();
     connectWebSocket();
     // Primera vez que despliega: tour guiado de la UI en vivo.
@@ -766,15 +809,15 @@ el.start.addEventListener("click", async () => {
   }
 });
 
-el.stop.addEventListener("click", async () => {
+async function destruirInstanciaActual() {
   el.stop.disabled = true;
   setStatus("Destruyendo contenedor", "warn");
+  // Se marca ANTES de la llamada a la API para que si el contenedor muere
+  // antes de que llegue la respuesta HTTP (carrera con el onclose del WS),
+  // el handler no intente reconectar. Si la API falla se restaura abajo.
+  closingOnPurpose = true;
   try {
     await callApi(API.stop);
-    // El socket se cierra recién acá, ya confirmado el éxito: si el
-    // servidor falla en destruir (ej. Docker no responde), la consola
-    // sigue funcionando en vez de quedar muerta sin reconexión.
-    closingOnPurpose = true;
     if (socket) {
       socket.close();
       socket = null;
@@ -786,15 +829,23 @@ el.stop.addEventListener("click", async () => {
     if (el.flagInput) el.flagInput.value = "";
     await refresh();
   } catch (err) {
+    // La llamada a la API falló: la instancia posiblemente sigue viva.
+    // Se restaura closingOnPurpose para que el onclose del WS pueda
+    // intentar reconectar normalmente si la conexión se cae.
+    closingOnPurpose = false;
     setStatus(err.message, "down");
     el.stop.disabled = false;
-  } finally {
-    closingOnPurpose = false;
   }
-});
+}
+
+el.stop.addEventListener("click", destruirInstanciaActual);
 
 let ultimoStatusActivo = null;
 let ultimaInstanciaActiva = null;
+// Valor de vida máxima por defecto guardado al abrir el panel oculto y
+// reenviado sin cambiar al guardar (el backend lo exige pero no se edita
+// desde el panel; se declara aquí para que el save handler lo alcance).
+let _cachedLifetime = {};
 
 function actualizarCountdown() {
   if (!el.countdownBadge) return;
@@ -891,6 +942,14 @@ if (el.flagForm) {
 if (el.victoryCloseBtn) {
   el.victoryCloseBtn.addEventListener("click", () => {
     el.victoryModal.hidden = true;
+  });
+}
+
+const victoryDestroyBtn = document.getElementById("btn-victory-destroy");
+if (victoryDestroyBtn) {
+  victoryDestroyBtn.addEventListener("click", () => {
+    el.victoryModal.hidden = true;
+    destruirInstanciaActual();
   });
 }
 
@@ -1127,6 +1186,10 @@ if (el.userChip && el.userChip.dataset.isStaff === "true") {
   let clicksSeguidos = 0;
   let ultimoClick = 0;
 
+  // Valores de vida máxima: no se exponen en el panel pero el backend
+  // los exige. Se guardan al abrir y se reenvían sin cambiar al guardar.
+  // (La variable vive en el scope del módulo, ver más arriba.)
+
   el.userChip.addEventListener("click", async () => {
     const ahora = Date.now();
     clicksSeguidos = ahora - ultimoClick < 1500 ? clicksSeguidos + 1 : 1;
@@ -1138,10 +1201,12 @@ if (el.userChip && el.userChip.dataset.isStaff === "true") {
     try {
       const config = await callApi(API.platformSettings, "GET");
       el.settingsInactivity.value = Math.round(config.inactivity_timeout_seconds / 60);
-      el.settingsLifetime.value = +(config.max_lifetime_seconds / 3600).toFixed(2);
       el.settingsTimeBasico.value = Math.round(config.time_limit_basico_seconds / 60);
       el.settingsTimeIntermedio.value = Math.round(config.time_limit_intermedio_seconds / 60);
       el.settingsTimeDificil.value = Math.round(config.time_limit_dificil_seconds / 60);
+      _cachedLifetime = {
+        max_lifetime_seconds: config.max_lifetime_seconds,
+      };
       el.settingsFeedback.hidden = true;
       el.settingsModal.hidden = false;
       cambiarTabPanel("config");
@@ -1516,11 +1581,10 @@ document.querySelectorAll(".number-stepper-btn").forEach((btn) => {
 if (el.settingsSaveBtn) {
   el.settingsSaveBtn.addEventListener("click", async () => {
     const minutos = Number(el.settingsInactivity.value);
-    const horas = Number(el.settingsLifetime.value);
     const minBasico = Number(el.settingsTimeBasico.value);
     const minIntermedio = Number(el.settingsTimeIntermedio.value);
     const minDificil = Number(el.settingsTimeDificil.value);
-    const todosValidos = [minutos, horas, minBasico, minIntermedio, minDificil].every(
+    const todosValidos = [minutos, minBasico, minIntermedio, minDificil].every(
       (v) => v && v > 0
     );
     if (!todosValidos) {
@@ -1534,10 +1598,12 @@ if (el.settingsSaveBtn) {
     try {
       await callApi(API.platformSettings, "POST", {
         inactivity_timeout_seconds: Math.round(minutos * 60),
-        max_lifetime_seconds: Math.round(horas * 3600),
         time_limit_basico_seconds: Math.round(minBasico * 60),
         time_limit_intermedio_seconds: Math.round(minIntermedio * 60),
         time_limit_dificil_seconds: Math.round(minDificil * 60),
+        // Vida máxima por defecto: no se edita desde el panel pero el
+        // backend la exige; se reenvía sin cambiar.
+        ..._cachedLifetime,
       });
       el.settingsFeedback.textContent = `Guardado: ${minutos} min inactividad · básico ${minBasico}m · intermedio ${minIntermedio}m · difícil ${minDificil}m.`;
       el.settingsFeedback.className = "settings-feedback is-success";
@@ -1581,6 +1647,10 @@ document.addEventListener("keydown", (evento) => {
     if (status.active) {
       setStatus("Instancia activa — conectando", "warn");
       connectWebSocket();
+    } else if (status.destroyed_notice) {
+      // No estaba conectado cuando se destruyó (ej. cerró la pestaña):
+      // se lo cuenta ahora, al volver, en vez de un "Sin instancia" mudo.
+      mostrarAvisoDestruccion(status);
     } else {
       setStatus("Sin instancia", null);
     }
