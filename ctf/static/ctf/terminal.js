@@ -1002,7 +1002,12 @@ let tourMarcadoVisto = false;
 function tourVisible(elemento) {
   if (!elemento) return false;
   const r = elemento.getBoundingClientRect();
-  return r.width > 0 && r.height > 0;
+  if (r.width === 0 || r.height === 0) return false;
+  // Con dimensiones no alcanza: #terminal usa opacity (no display/hidden)
+  // para su transición, así que sigue teniendo tamaño aunque esté oculto
+  // detrás del catálogo de retos mientras no hay instancia desplegada.
+  const estilo = window.getComputedStyle(elemento);
+  return estilo.opacity !== "0" && estilo.visibility !== "hidden" && estilo.display !== "none";
 }
 
 function tourPosicionar(target) {
@@ -1060,9 +1065,10 @@ function tourTerminar() {
 }
 
 function tourLanzar() {
-  // Arranca el tour con los pasos cuyo elemento esté visible ahora mismo.
-  // Devuelve false si no hay nada que mostrar (ej. sin instancia activa).
-  if (!el.tourOverlay) return false;
+  // El tour explica la consola EN VIVO (terminal, guía, contador, bandera):
+  // sin instancia activa no tiene sentido, aunque .side/#btn-stop sigan
+  // presentes en el DOM (existen siempre, solo deshabilitados/vacíos).
+  if (!el.tourOverlay || !ultimoStatusActivo) return false;
   tourPasos = TOUR_STEPS.filter((s) => tourVisible(document.querySelector(s.sel)));
   if (tourPasos.length === 0) return false;
   el.tourOverlay.hidden = false;

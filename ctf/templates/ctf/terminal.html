@@ -27,7 +27,15 @@
     </div>
     <div class="topbar-right">
       <button type="button" class="btn btn-ghost btn-help" id="btn-help" title="Ver el tutorial de bienvenida"
-        aria-label="Ver tutorial">?</button>
+        aria-label="Ver tutorial">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span class="btn-help-label">Ayuda</span>
+      </button>
       <span class="user-chip" id="user-chip" data-is-staff="{{ user.is_staff|yesno:'true,false' }}" title="">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">
@@ -52,7 +60,14 @@
         </div>
         <div class="actions">
           <button type="button" class="btn btn-ghost btn-help" id="btn-tour"
-            title="Ver el tour de la interfaz" aria-label="Ver el tour de la interfaz">?</button>
+            title="Ver el tour de la interfaz" aria-label="Ver el tour de la interfaz">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            <span class="btn-help-label">Tour</span>
+          </button>
           <span class="countdown-badge" id="countdown-badge" hidden
             title="Tiempo hasta la vida máxima de esta instancia">⏱ --:--</span>
           <button id="btn-start" class="btn btn-primary" disabled>Desplegar instancia</button>
