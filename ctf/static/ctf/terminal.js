@@ -21,6 +21,7 @@ const API = {
   destroyContainer: "/api/platform-settings/instances/destroy/",
   manageUsers: "/api/platform-settings/users/",
   tutorialVisto: "/api/tutorial-visto/",
+  tourVisto: "/api/tour-visto/",
 };
 
 const el = {
@@ -75,6 +76,16 @@ const el = {
   welcomeModal: document.getElementById("welcome-modal"),
   welcomeCloseBtn: document.getElementById("btn-welcome-close"),
   helpBtn: document.getElementById("btn-help"),
+  tourOverlay: document.getElementById("tour-overlay"),
+  tourRing: document.getElementById("tour-ring"),
+  tourCallout: document.getElementById("tour-callout"),
+  tourStep: document.getElementById("tour-step"),
+  tourTitle: document.getElementById("tour-title"),
+  tourText: document.getElementById("tour-text"),
+  tourSkip: document.getElementById("tour-skip"),
+  tourPrev: document.getElementById("tour-prev"),
+  tourNext: document.getElementById("tour-next"),
+  tourReplayBtn: document.getElementById("btn-tour"),
   settingsInactivity: document.getElementById("settings-inactivity"),
   settingsLifetime: document.getElementById("settings-lifetime"),
   settingsTimeBasico: document.getElementById("settings-time-basico"),
@@ -747,6 +758,8 @@ el.start.addEventListener("click", async () => {
     await callApi(API.start, "POST", { challenge: selectedChallenge });
     await refresh();
     connectWebSocket();
+    // Primera vez que despliega: tour guiado de la UI en vivo.
+    maybeStartTour();
   } catch (err) {
     setStatus(err.message, "down");
     el.start.disabled = false;
@@ -964,6 +977,136 @@ if (el.picker) {
   el.picker.addEventListener("focusout", ocultarTip);
   // Al scrollear, ocultarlo para que no quede flotando en una posición vieja.
   window.addEventListener("scroll", ocultarTip, true);
+}
+
+/*
+ * Tour guiado (coach-marks) que resalta la UII en vivo la primera vez que
+ * el usuario despliega una instancia. `maybeStartTour()` se llama desde el
+ * handler de desplegar; el resaltado usa un anillo con box-shadow gigante
+ * para oscurecer todo menos el elemento apuntado.
+ */
+const TOUR_STEPS = [
+  { sel: "#terminal", title: "Tu consola", text: "Esta es la terminal del contenedor del reto. Aquí ejecutas comandos reales para explorar y explotar la vulnerabilidad." },
+  { sel: "#guide-bar", title: "Guía del reto", text: "El objetivo, el primer comando para arrancar y qué deberías ver. Si te trabas, empieza por aquí." },
+  { sel: "#countdown-badge", title: "Tiempo límite", text: "Tu instancia dura un tiempo limitado. Cuando el contador llega a 0, se destruye sola y se liberan los recursos." },
+  { sel: "#flag-bar", title: "Validar tu bandera", text: "Cuando encuentres la bandera (FLAG{...}), la pegas aquí y la validas. Ojo: 5 intentos fallidos destruyen la instancia." },
+  { sel: ".side", title: "Datos y límites", text: "Aquí ves el estado de tu instancia y sus límites de recursos (memoria, CPU, procesos)." },
+  { sel: "#btn-stop", title: "Destruir cuando termines", text: "Puedes destruir la instancia manualmente en cualquier momento para empezar otro reto." },
+];
+
+let tourIndice = 0;
+let tourPasos = [];
+let tourMostradoEstaSesion = false;
+let tourMarcadoVisto = false;
+
+function tourVisible(elemento) {
+  if (!elemento) return false;
+  const r = elemento.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
+}
+
+function tourPosicionar(target) {
+  const r = target.getBoundingClientRect();
+  const pad = 6;
+  el.tourRing.style.left = `${r.left - pad}px`;
+  el.tourRing.style.top = `${r.top - pad}px`;
+  el.tourRing.style.width = `${r.width + pad * 2}px`;
+  el.tourRing.style.height = `${r.height + pad * 2}px`;
+
+  const callout = el.tourCallout;
+  const ancho = Math.min(320, window.innerWidth - 24);
+  callout.style.width = `${ancho}px`;
+  const alto = callout.offsetHeight;
+  let top = r.bottom + 12;
+  if (top + alto > window.innerHeight - 12) top = r.top - alto - 12;
+  if (top < 12) top = 12;
+  let left = r.left;
+  if (left + ancho > window.innerWidth - 12) left = window.innerWidth - 12 - ancho;
+  if (left < 12) left = 12;
+  callout.style.left = `${left}px`;
+  callout.style.top = `${top}px`;
+}
+
+function tourMostrarPaso(i) {
+  tourIndice = i;
+  const paso = tourPasos[i];
+  const target = document.querySelector(paso.sel);
+  if (!tourVisible(target)) {
+    tourTerminar();
+    return;
+  }
+  el.tourStep.textContent = `Paso ${i + 1} de ${tourPasos.length}`;
+  el.tourTitle.textContent = paso.title;
+  el.tourText.textContent = paso.text;
+  el.tourPrev.disabled = i === 0;
+  el.tourNext.textContent = i === tourPasos.length - 1 ? "Listo" : "Siguiente";
+  target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  requestAnimationFrame(() => tourPosicionar(target));
+}
+
+async function tourMarcar() {
+  if (tourMarcadoVisto) return;
+  tourMarcadoVisto = true;
+  try {
+    await callApi(API.tourVisto, "POST");
+  } catch (_) {
+    // Si falla el marcado no es grave: reaparecería en el próximo despliegue.
+  }
+}
+
+function tourTerminar() {
+  if (el.tourOverlay) el.tourOverlay.hidden = true;
+  tourMarcar();
+}
+
+function tourLanzar() {
+  // Arranca el tour con los pasos cuyo elemento esté visible ahora mismo.
+  // Devuelve false si no hay nada que mostrar (ej. sin instancia activa).
+  if (!el.tourOverlay) return false;
+  tourPasos = TOUR_STEPS.filter((s) => tourVisible(document.querySelector(s.sel)));
+  if (tourPasos.length === 0) return false;
+  el.tourOverlay.hidden = false;
+  tourMostrarPaso(0);
+  return true;
+}
+
+function maybeStartTour() {
+  // Auto: solo la primera vez que se despliega (marcado en BD).
+  if (!el.tourOverlay) return;
+  if (el.tourOverlay.dataset.mostrarTour !== "1") return;
+  if (tourMostradoEstaSesion) return;
+  if (el.welcomeModal && !el.welcomeModal.hidden) return; // no pisar el modal
+  // Esperar a que la UI en vivo (consola, guía, contador, flag) esté pintada.
+  setTimeout(() => {
+    if (tourMostradoEstaSesion) return;
+    if (tourLanzar()) tourMostradoEstaSesion = true;
+  }, 700);
+}
+
+function tourReplayManual() {
+  // A demanda desde el botón "?" de la consola. Ignora si ya se vio; solo
+  // tiene sentido con una instancia activa (ahí existen los elementos).
+  if (!tourLanzar()) {
+    setStatus("Despliega una instancia para ver el tour de la consola", "warn");
+  }
+}
+
+if (el.tourOverlay) {
+  el.tourNext.addEventListener("click", () => {
+    if (tourIndice >= tourPasos.length - 1) tourTerminar();
+    else tourMostrarPaso(tourIndice + 1);
+  });
+  el.tourPrev.addEventListener("click", () => {
+    if (tourIndice > 0) tourMostrarPaso(tourIndice - 1);
+  });
+  el.tourSkip.addEventListener("click", tourTerminar);
+  if (el.tourReplayBtn) el.tourReplayBtn.addEventListener("click", tourReplayManual);
+  window.addEventListener("resize", () => {
+    if (!el.tourOverlay.hidden && tourPasos[tourIndice]) {
+      const t = document.querySelector(tourPasos[tourIndice].sel);
+      if (t) tourPosicionar(t);
+    }
+  });
 }
 
 /*

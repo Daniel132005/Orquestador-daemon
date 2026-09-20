@@ -68,6 +68,9 @@ class OnboardingState(models.Model):
         related_name="onboarding",
     )
     tutorial_visto = models.BooleanField(default=False)
+    # Tour guiado (coach-marks) que resalta la UII en vivo la primera vez
+    # que el usuario despliega una instancia.
+    tour_visto = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

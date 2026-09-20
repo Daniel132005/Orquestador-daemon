@@ -63,7 +63,10 @@ def terminal_page(request):
     return render(
         request,
         "ctf/terminal.html",
-        {"mostrar_tutorial": not estado.tutorial_visto},
+        {
+            "mostrar_tutorial": not estado.tutorial_visto,
+            "mostrar_tour": not estado.tour_visto,
+        },
     )
 
 
@@ -76,6 +79,18 @@ def tutorial_visto_view(request):
     if not estado.tutorial_visto:
         estado.tutorial_visto = True
         estado.save(update_fields=["tutorial_visto", "updated_at"])
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def tour_visto_view(request):
+    """Marca el tour guiado (coach-marks) como visto: aparece una sola vez,
+    la primera vez que el usuario despliega una instancia."""
+    estado, _ = OnboardingState.objects.get_or_create(user=request.user)
+    if not estado.tour_visto:
+        estado.tour_visto = True
+        estado.save(update_fields=["tour_visto", "updated_at"])
     return JsonResponse({"ok": True})
 
 

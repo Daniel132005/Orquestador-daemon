@@ -2127,3 +2127,68 @@ body {
 .owasp-info-demo {
   color: var(--green);
 }
+
+/* --- Tour guiado (coach-marks) --- */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  /* Captura clics para que la página no sea interactiva durante el tour;
+     el oscurecimiento lo pone el box-shadow del anillo. */
+  pointer-events: auto;
+  background: transparent;
+}
+.tour-overlay[hidden] {
+  display: none;
+}
+.tour-ring {
+  position: fixed;
+  border: 2px solid var(--green);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 100vmax rgba(5, 8, 7, 0.8), 0 0 18px rgba(62, 240, 165, 0.5);
+  pointer-events: none;
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.tour-callout {
+  position: fixed;
+  z-index: 1501;
+  pointer-events: auto;
+  background: var(--panel-2);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  transition: left 0.25s ease, top 0.25s ease;
+}
+.tour-callout-step {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+  margin-bottom: 4px;
+}
+.tour-callout-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--green-bright);
+}
+.tour-callout-text {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.tour-callout-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tour-nav {
+  display: flex;
+  gap: 8px;
+}
+.tour-callout-actions .btn {
+  padding: 5px 12px;
+  font-size: 12px;
+}

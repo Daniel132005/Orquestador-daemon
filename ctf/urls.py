@@ -14,4 +14,5 @@ urlpatterns = [
     path("platform-settings/users/", views.manage_users_view, name="platform-users"),
     path("platform-settings/users/<int:user_id>/", views.manage_user_detail_view, name="platform-user-detail"),
     path("tutorial-visto/", views.tutorial_visto_view, name="tutorial-visto"),
+    path("tour-visto/", views.tour_visto_view, name="tour-visto"),
 ]

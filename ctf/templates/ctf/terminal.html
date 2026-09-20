@@ -51,6 +51,8 @@
           <span id="status-text">Comprobando estado</span>
         </div>
         <div class="actions">
+          <button type="button" class="btn btn-ghost btn-help" id="btn-tour"
+            title="Ver el tour de la interfaz" aria-label="Ver el tour de la interfaz">?</button>
           <span class="countdown-badge" id="countdown-badge" hidden
             title="Tiempo hasta la vida máxima de esta instancia">⏱ --:--</span>
           <button id="btn-start" class="btn btn-primary" disabled>Desplegar instancia</button>
@@ -451,6 +453,22 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tour-overlay" id="tour-overlay" data-mostrar-tour="{{ mostrar_tour|yesno:'1,0' }}" hidden>
+    <div class="tour-ring" id="tour-ring"></div>
+    <div class="tour-callout" id="tour-callout">
+      <div class="tour-callout-step" id="tour-step"></div>
+      <h3 class="tour-callout-title" id="tour-title"></h3>
+      <p class="tour-callout-text" id="tour-text"></p>
+      <div class="tour-callout-actions">
+        <button type="button" class="btn btn-ghost tour-skip" id="tour-skip">Saltar</button>
+        <div class="tour-nav">
+          <button type="button" class="btn btn-ghost" id="tour-prev">Anterior</button>
+          <button type="button" class="btn btn-primary" id="tour-next">Siguiente</button>
         </div>
       </div>
     </div>
