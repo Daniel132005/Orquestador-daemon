@@ -1193,13 +1193,16 @@ function renderInstancesTable(instancias) {
     el.instancesTbody.innerHTML = '<tr><td colspan="6" class="instances-empty">Nada corriendo ahora mismo.</td></tr>';
     return;
   }
+  // i.user puede incluir texto armado por el backend para huérfanos (ej.
+  // "nombre (deducido, sin fila)"), no solo el username validado -- se
+  // escapa igual que el resto antes de interpolarlo en innerHTML.
   el.instancesTbody.innerHTML = instancias
     .map(
       (i) => `
     <tr>
       <td><span class="instance-state-tag is-${i.estado}">${i.estado}</span></td>
-      <td>${i.user || "—"}</td>
-      <td>${i.challenge || "—"}</td>
+      <td>${escaparAtributo(i.user || "—")}</td>
+      <td>${escaparAtributo(i.challenge || "—")}</td>
       <td title="${i.container_id}">${i.container_id.slice(0, 12)}</td>
       <td>${formatearMomento(i)}</td>
       <td><button type="button" class="btn-instance-destroy" data-container="${i.container_id}" data-network="${i.network_id || ""}">Destruir</button></td>
@@ -1308,10 +1311,12 @@ function renderUsersTable(usuarios) {
     el.usersTbody.innerHTML = '<tr><td colspan="4" class="instances-empty">Sin usuarios todavía.</td></tr>';
     return;
   }
-  // El username solo admite letras y guion bajo (validado en el backend),
-  // así que no puede inyectar HTML/atributos -- se puede interpolar directo.
+  // El username ya se valida en el backend (solo letras y guion bajo), pero
+  // igual se escapa acá antes de interpolarlo en innerHTML: defensa en
+  // profundidad, por si esa validación cambiara o el dato llegara de otra vía.
   el.usersTbody.innerHTML = usuarios
     .map((u) => {
+      const nombre = escaparAtributo(u.username);
       const rolLabel = u.is_staff ? "Quitar staff" : "Hacer staff";
       // No puedes degradarte ni eliminarte a ti mismo (te dejaría sin
       // acceso al panel), así que esos botones no aparecen en tu fila.
@@ -1320,14 +1325,14 @@ function renderUsersTable(usuarios) {
         : `<button type="button" class="btn-user-accion" data-accion="rol" data-id="${u.id}" data-staff="${u.is_staff ? "1" : "0"}">${rolLabel}</button>`;
       const delBtn = u.is_self
         ? ""
-        : `<button type="button" class="btn-user-accion is-danger" data-accion="eliminar" data-id="${u.id}" data-nombre="${u.username}">Eliminar</button>`;
+        : `<button type="button" class="btn-user-accion is-danger" data-accion="eliminar" data-id="${u.id}" data-nombre="${nombre}">Eliminar</button>`;
       return `
     <tr>
-      <td>${u.username}${u.is_self ? ' <span class="user-self-tag">tú</span>' : ""}</td>
+      <td>${nombre}${u.is_self ? ' <span class="user-self-tag">tú</span>' : ""}</td>
       <td>${u.is_staff ? '<span class="user-staff-tag">Staff</span>' : "—"}</td>
       <td>${new Date(u.date_joined).toLocaleDateString("es")}</td>
       <td class="user-acciones">
-        <button type="button" class="btn-user-accion" data-accion="editar" data-id="${u.id}" data-nombre="${u.username}" data-staff="${u.is_staff ? "1" : "0"}">Editar</button>
+        <button type="button" class="btn-user-accion" data-accion="editar" data-id="${u.id}" data-nombre="${nombre}" data-staff="${u.is_staff ? "1" : "0"}">Editar</button>
         ${rolBtn}
         ${delBtn}
       </td>
