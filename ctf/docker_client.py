@@ -209,7 +209,7 @@ def start_container(container_id: str) -> None:
     )
 
 
-def stop_container(container_id: str, timeout: int = 5) -> None:
+def stop_container(container_id: str, timeout: int = 0) -> None:
     response = _session().post(
         f"{BASE_URL}/containers/{container_id}/stop", params={"t": timeout}
     )
