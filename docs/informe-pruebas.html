@@ -444,7 +444,7 @@
     <p>
       Las 122 verificaciones ejecutadas pasaron. Además, la campaña detectó
       <strong>tres defectos reales</strong> que no estaban documentados en el
-      proyecto y que se detallan en la sección 06: el límite de memoria efectivo
+      proyecto y que se detallan en la sección 07: el límite de memoria efectivo
       es el doble del declarado, el techo de estudiantes concurrentes lo impone
       la red y no la RAM, y la destrucción de instancias desperdicia cinco
       segundos por contenedor.
@@ -913,6 +913,17 @@ Ran <b>12 tests</b> — <b>OK</b></pre>
     Inspeccion: <b>Internal=true</b> Driver=bridge
   &gt;&gt; RESULTADO: <b>OK</b> - red sin salida a internet
 
+<b>[H-02]</b> Crea el contenedor del reto con limites de recursos
+  $ docker_client.create_container(image=ctf-reto-idor:latest, mem=256MB, cpus=0.5, pids=64)
+    Id de contenedor: 1166d8848825
+    Tiempo: <b>0.071 s</b>
+  &gt;&gt; RESULTADO: <b>OK</b>
+
+<b>[H-03]</b> Inyecta la bandera personalizada del estudiante
+  $ docker_client.inject_challenge_flag(cont, 'idor', &lt;flag del alumno 1&gt;)
+    Bandera generada: <b>FLAG{idor_12f669e21f3b8de1}</b>
+  &gt;&gt; RESULTADO: <b>OK</b>
+
 <b>[H-04]</b> Arranca el contenedor
   $ docker_client.start_container(cont)
     Tiempo: <b>0.282 s</b>
@@ -940,6 +951,17 @@ Ran <b>12 tests</b> — <b>OK</b></pre>
       "flag": "<b>FLAG{idor_12f669e21f3b8de1}</b>"
     }
   &gt;&gt; RESULTADO: <b>OK</b> - el reto es resoluble
+
+<b>[H-08]</b> La consola interactiva puede abrirse (exec del TTY)
+  $ docker_client.create_exec(cont, ['/bin/sh'])
+    Id del exec: 8615f970ba47
+  &gt;&gt; RESULTADO: <b>OK</b>
+
+<b>[H-09]</b> El contenedor aparece en el inventario de la plataforma
+  $ docker_client.list_ctf_containers()
+    Contenedores CTF vivos: 1  (Ids: 1166d8848825)
+    Imagen: ctf-reto-idor:latest | Estado: running | Red: ctf-net-humo-1789949475
+  &gt;&gt; RESULTADO: <b>OK</b> - el panel puede detectar huerfanos
 
 <b>[H-10]</b> Destruccion completa: contenedor y red
   $ docker_client.destroy_instance(cont, red)
@@ -1244,6 +1266,16 @@ Ran <b>12 tests</b> — <b>OK</b></pre>
     </div>
 <pre><span class="cmd">$ python pruebas/carga.py 20</span>
 
+<b>[C-00]</b> PREPARACION: CUENTAS Y ESTADO INICIAL
+    Cuentas listas: <b>20</b> (nuevas: 0)
+    Hilos del servidor en reposo: <b>1</b>
+    Sockets abiertos en reposo: 3
+    Contenedores CTF vivos: <b>0</b>
+
+<b>[C-01]</b> AUTENTICACION CONCURRENTE DE 20 ESTUDIANTES
+    Sesiones iniciadas: <b>20 / 20</b>
+    Tiempo total: <b>1.21 s</b>
+
 <b>[C-02]</b> DESPLIEGUE CONCURRENTE DE 20 INSTANCIAS
     Instancias creadas: <b>20 / 20</b>
     Tiempo total de la oleada: <b>7.79 s</b>
@@ -1268,6 +1300,13 @@ Ran <b>12 tests</b> — <b>OK</b></pre>
       bloqueados en E/S de socket: <b>0</b>
 
     Hilos totales: reposo 1 -&gt; arranque 18 -&gt; consolas abiertas <b>18</b>
+
+<b>[C-05]</b> CONSUMO REAL DE RECURSOS DEL HOST BAJO CARGA
+  $ docker stats --no-stream
+    great_solomon       0.00%   664KiB / 256MiB
+    sharp_nightingale   0.00%   672KiB / 256MiB
+    ... (20 contenedores activos)
+    Consumo medio por contenedor: <b>~665 KiB</b>
 
 <b>[C-06]</b> LIBERACION DE RECURSOS
     Instancias detenidas: <b>20 / 20</b>
@@ -1384,7 +1423,7 @@ Error response from daemon: all predefined address pools have been fully subnett
   </div>
 
   <div class="finding baja">
-    <div class="sev">Hallazgo 3 · severidad media · rendimiento</div>
+    <div class="sev">Hallazgo 3 · severidad baja · rendimiento</div>
     <h3>Cada destrucción desperdicia cinco segundos</h3>
     <p>
       El proceso principal del contenedor es un shell que no termina al recibir
