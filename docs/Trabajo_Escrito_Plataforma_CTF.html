@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Plataforma CTF con Contenedores Dinámicos</title>
+<style>
+  @page { size: A4; margin: 2.5cm 2.7cm 2.5cm 3cm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    margin: 0;
+  }
+  p {
+    margin: 0 0 10pt 0;
+    text-align: justify;
+    text-indent: 1.25cm;
+    orphans: 3;
+    widows: 3;
+  }
+  p.noindent { text-indent: 0; }
+  .cover { page-break-after: always; text-align: center; padding-top: 1.9cm; }
+  .cover .logo { display: block; margin: 0 auto 22pt auto; width: 4.6cm; height: 4.6cm; }
+  .cover .univ { font-weight: bold; font-size: 12pt; margin-bottom: 2pt; }
+  .cover .fac { font-size: 12pt; margin-bottom: 26pt; }
+  .cover .asig { font-weight: bold; font-size: 14pt; margin-bottom: 30pt; }
+  .cover .titulo { font-weight: bold; font-size: 12pt; line-height: 1.4; margin-bottom: 60pt; }
+  .cover .creditos { text-align: right; margin-right: 0.95in; }
+  .cover .integrantes-label { font-weight: bold; margin-bottom: 4pt; }
+  .cover .integrantes p { margin: 0; }
+  .cover .profesor { margin-top: 22pt; }
+  .cover .lugar { margin-top: 40pt; text-align: center; }
+
+  .toc-page { page-break-after: always; }
+  h1.toc-title { text-align: center; font-weight: bold; font-size: 13pt; margin: 0 0 20pt 0; }
+  .toc-entry { display: flex; align-items: baseline; margin: 0 0 5pt 0; }
+  .toc-entry.l0 { font-weight: normal; }
+  .toc-entry.indent1 { margin-left: 1.1cm; }
+  .toc-entry.indent2 { margin-left: 2.2cm; font-style: italic; }
+  .toc-entry .ttl { white-space: nowrap; }
+  .toc-entry .dots { flex: 1 1 auto; border-bottom: 1px dotted #000; margin: 0 4px; height: 0.9em; }
+  .toc-entry .pg { flex: none; }
+
+  h1.chapter {
+    page-break-before: always;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13pt;
+    margin: 0 0 22pt 0;
+  }
+  h1.intro-title, h1.ref-title {
+    page-break-before: always;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13pt;
+    margin: 0 0 22pt 0;
+  }
+  h2.sec {
+    font-weight: bold;
+    font-size: 12pt;
+    margin: 16pt 0 8pt 0;
+    text-indent: 0;
+  }
+  h3.subsec {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 12pt;
+    margin: 12pt 0 6pt 0;
+    text-indent: 0;
+  }
+  ol.numbered, ul.bulleted { margin: 0 0 10pt 0; padding-left: 1.5cm; }
+  ol.numbered li, ul.bulleted li { margin-bottom: 6pt; text-align: justify; }
+  ol.numbered li strong, ul.bulleted li strong { font-weight: bold; }
+
+  .table-block { margin: 14pt 0 16pt 0; }
+  .table-block .tnum { font-weight: bold; margin: 0; text-indent: 0; }
+  .table-block .tcap { font-style: italic; margin: 0 0 6pt 0; text-indent: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 10.5pt; }
+  table caption { display: none; }
+  th, td { border: none; padding: 4pt 8pt; text-align: left; vertical-align: top; }
+  thead th { border-top: 1pt solid #000; border-bottom: 1pt solid #000; font-weight: bold; }
+  tbody tr:last-child td { border-bottom: 1pt solid #000; }
+  table.compact td, table.compact th { font-size: 10pt; }
+  code, .mono { font-family: "Courier New", monospace; font-size: 10.5pt; }
+
+  .diagram {
+    font-family: "Courier New", monospace;
+    font-size: 9pt;
+    line-height: 1.35;
+    white-space: pre;
+    border: 1px solid #999;
+    background: #f7f7f7;
+    padding: 10pt 12pt;
+    margin: 12pt 0 4pt 0;
+    overflow-x: auto;
+  }
+  .fig-cap { text-indent: 0; margin: 4pt 0 14pt 0; text-align: left; }
+
+  .ref-list p { text-indent: -1.25cm; margin-left: 1.25cm; text-align: left; margin-bottom: 10pt; }
+
+  .note { font-size: 10.5pt; text-indent: 0; color: #222; }
+  strong.hl { font-weight: bold; }
+  .del { text-decoration: line-through; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ PORTADA ============================================================ -->
+<div class="cover">
+  <img class="logo" alt="Escudo de la Universidad Santa María" src="usm_logo.png">
+  <p class="univ noindent">UNIVERSIDAD SANTA MARIA</p>
+  <p class="fac noindent">FACULTAD INGENERIA Y ARQUITECTURA - SISTEMAS</p>
+  <p class="asig noindent">Proyecto de Ingeniería de Software II — Ciberseguridad</p>
+  <p class="titulo noindent">
+    Plataforma CTF con Contenedores Dinámicos:<br>
+    Diseño, Implementación y Validación de un Orquestador de Docker<br>
+    con Aislamiento por Usuario y Retos OWASP Top 10
+  </p>
+  <div class="creditos">
+    <p class="integrantes-label noindent">Integrantes:</p>
+    <div class="integrantes">
+      <p>Agostini Pedro</p>
+      <p>Castellanos Daniel</p>
+      <p>Guillén Arantza</p>
+      <p>Pérez Samuel</p>
+      <p>Peña José</p>
+    </div>
+    <p class="profesor noindent">Profesor: Alexander Moya</p>
+  </div>
+  <p class="lugar noindent">Caracas, Venezuela, septiembre de 2026</p>
+</div>
+
+<!-- ============================================================ INDICE ============================================================ -->
+<div class="toc-page">
+<h1 class="toc-title">Índice</h1>
+
+<div class="toc-entry l0"><span class="ttl">Introducción</span><span class="dots"></span><span class="pg">4</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 1. Definición del Proyecto</span><span class="dots"></span><span class="pg">5</span></div>
+<div class="toc-entry indent1"><span class="ttl">1.1 Descripción general</span><span class="dots"></span><span class="pg">5</span></div>
+<div class="toc-entry indent1"><span class="ttl">1.2 Problemas a resolver</span><span class="dots"></span><span class="pg">5</span></div>
+<div class="toc-entry indent1"><span class="ttl">1.3 Objetivos</span><span class="dots"></span><span class="pg">5</span></div>
+<div class="toc-entry indent1"><span class="ttl">1.4 Alcance</span><span class="dots"></span><span class="pg">6</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 2. Marco Teórico</span><span class="dots"></span><span class="pg">7</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.1 Competencias Capture The Flag como herramienta pedagógica</span><span class="dots"></span><span class="pg">7</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.2 Contenedores Linux: namespaces y cgroups</span><span class="dots"></span><span class="pg">7</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.3 Docker Engine API y socket Unix</span><span class="dots"></span><span class="pg">7</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.4 OWASP Top 10 (2021)</span><span class="dots"></span><span class="pg">7</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.5 Arquitectura ASGI, WebSockets y emulación de terminal</span><span class="dots"></span><span class="pg">8</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.6 Principios de diseño seguro</span><span class="dots"></span><span class="pg">8</span></div>
+<div class="toc-entry indent1"><span class="ttl">2.7 Metodologías iterativas e incrementales</span><span class="dots"></span><span class="pg">8</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 3. Análisis de Vulnerabilidad</span><span class="dots"></span><span class="pg">9</span></div>
+<div class="toc-entry indent1"><span class="ttl">3.1 Modelo de amenazas de la plataforma</span><span class="dots"></span><span class="pg">9</span></div>
+<div class="toc-entry indent1"><span class="ttl">3.2 Vulnerabilidades pedagógicas: los diez retos OWASP</span><span class="dots"></span><span class="pg">10</span></div>
+<div class="toc-entry indent1"><span class="ttl">3.3 Hallazgo crítico: bypass trivial de los retos iniciales</span><span class="dots"></span><span class="pg">10</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 4. Diseño de la Solución</span><span class="dots"></span><span class="pg">11</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.1 Arquitectura general</span><span class="dots"></span><span class="pg">11</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.2 Componentes</span><span class="dots"></span><span class="pg">11</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.3 Modelo de datos</span><span class="dots"></span><span class="pg">12</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.4 Flujos principales</span><span class="dots"></span><span class="pg">13</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.5 Mecanismos de aislamiento y endurecimiento</span><span class="dots"></span><span class="pg">13</span></div>
+<div class="toc-entry indent1"><span class="ttl">4.6 Decisiones de diseño y alternativas descartadas</span><span class="dots"></span><span class="pg">14</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 5. Metodología de Desarrollo</span><span class="dots"></span><span class="pg">15</span></div>
+<div class="toc-entry indent1"><span class="ttl">5.1 Enfoque adoptado</span><span class="dots"></span><span class="pg">15</span></div>
+<div class="toc-entry indent1"><span class="ttl">5.2 Iteraciones</span><span class="dots"></span><span class="pg">15</span></div>
+<div class="toc-entry indent1"><span class="ttl">5.3 Herramientas y entorno</span><span class="dots"></span><span class="pg">15</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 6. Implementación y Pruebas</span><span class="dots"></span><span class="pg">16</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.1 Stack tecnológico</span><span class="dots"></span><span class="pg">16</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.2 Implementación de los componentes clave</span><span class="dots"></span><span class="pg">16</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.3 Estrategia y niveles de prueba</span><span class="dots"></span><span class="pg">17</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.4 Pruebas unitarias automatizadas</span><span class="dots"></span><span class="pg">17</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.5 Pruebas de aislamiento</span><span class="dots"></span><span class="pg">18</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.6 Pruebas de estrés y de carga</span><span class="dots"></span><span class="pg">18</span></div>
+<div class="toc-entry indent1"><span class="ttl">6.7 Pruebas de los retos</span><span class="dots"></span><span class="pg">20</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 7. Resultados</span><span class="dots"></span><span class="pg">21</span></div>
+<div class="toc-entry indent1"><span class="ttl">7.1 Resultados cuantitativos</span><span class="dots"></span><span class="pg">21</span></div>
+<div class="toc-entry indent1"><span class="ttl">7.2 Resultados cualitativos</span><span class="dots"></span><span class="pg">21</span></div>
+<div class="toc-entry indent1"><span class="ttl">7.3 Defectos detectados por la campaña de validación</span><span class="dots"></span><span class="pg">22</span></div>
+<div class="toc-entry l0"><span class="ttl">Capítulo 8. Conclusiones y Mejoras Futuras</span><span class="dots"></span><span class="pg">23</span></div>
+<div class="toc-entry indent1"><span class="ttl">8.1 Conclusiones</span><span class="dots"></span><span class="pg">23</span></div>
+<div class="toc-entry indent1"><span class="ttl">8.2 Limitaciones</span><span class="dots"></span><span class="pg">23</span></div>
+<div class="toc-entry indent1"><span class="ttl">8.3 Mejoras futuras</span><span class="dots"></span><span class="pg">24</span></div>
+<div class="toc-entry l0"><span class="ttl">Referencias</span><span class="dots"></span><span class="pg">25</span></div>
+
+</div>
+
+<!-- ============================================================ INTRODUCCION ============================================================ -->
+<h1 class="intro-title">Introducción</h1>
+
+<p>La formación práctica en ciberseguridad exige entornos donde el estudiante pueda ejecutar ataques reales sobre software deliberadamente vulnerable sin poner en riesgo la infraestructura de la institución ni a los demás participantes. Las competencias de tipo “Capture The Flag” (CTF) son el formato más extendido para este propósito, porque convierten la explotación de una vulnerabilidad en un objetivo concreto y verificable: obtener una cadena secreta, la <em>flag</em>, que solo se alcanza al comprometer la falla (Chapman et al., 2014).</p>
+
+<p>Sin embargo, montar un laboratorio de este tipo presenta un problema de ingeniería no trivial. Cada estudiante necesita un entorno propio, aislado de los demás, con límites de recursos que impidan que un error o un abuso (un bucle infinito, una <em>fork bomb</em>, etc.) degrade al servidor compartido, y con un ciclo de vida automático que libere recursos cuando el entorno deja de usarse. Los contenedores Linux, y en particular Docker, ofrecen la base técnica para resolverlo, pero su uso seguro en un escenario multiusuario requiere decisiones deliberadas de diseño.</p>
+
+<p>Este trabajo documenta el diseño, la implementación y la validación de Orquestador-daemon, una plataforma CTF con contenedores dinámicos desarrollada como proyecto de la asignatura Ingeniería de Software II. La plataforma permite que cada usuario autenticado despliegue bajo demanda un contenedor aislado con uno de diez retos alineados al OWASP Top 10 (2021), interactúe con él mediante una consola en el navegador, superando el reto al ingresar la “flag” correcta. El sistema destruye la instancia de forma automática por inactividad o por vencimiento de su vida máxima.</p>
+
+<p>El documento se estructura en ocho capítulos. El capítulo 1 define el proyecto, los problemas que resuelve, sus objetivos y su alcance. El capítulo 2 presenta el marco teórico. El capítulo 3 desarrolla el análisis de vulnerabilidad, tanto de las fallas pedagógicas que los retos exponen como de los vectores de ataque contra la propia plataforma. El capítulo 4 describe el diseño de la solución y la propuesta técnica adoptada. El capítulo 5 expone la metodología de desarrollo. El capítulo 6 detalla la implementación, las herramientas empleadas y la campaña de pruebas —unitarias, de humo, de estrés y de carga— realizada sobre el sistema. El capítulo 7 resume los resultados y los defectos detectados durante la validación, y el capítulo 8 presenta las conclusiones, las limitaciones del sistema y las mejoras futuras.</p>
+
+<!-- ============================================================ CAPITULO 1 ============================================================ -->
+<h1 class="chapter">Capítulo 1. Definición del Proyecto</h1>
+
+<h2 class="sec">1.1 Descripción general</h2>
+<p>“Orquestador-daemon” es una aplicación web que actúa como orquestador de contenedores Docker para fines educativos. Su función central es recibir la solicitud de un estudiante autenticado, crear para él una red aislada y un contenedor con la imagen del reto elegido, exponer una consola interactiva sobre ese contenedor a través del navegador, validar la <em>flag</em> que el estudiante envía y destruir el entorno cuando corresponde. El código fuente se encuentra en el repositorio público del proyecto (Castellanos et al., 2026).</p>
+<p>El proyecto se planteó con tres retos técnicos obligatorios. El primero, de <em>backend</em>, exige que el orquestador se comunique directamente con el socket del daemon de Docker, sin usar el SDK oficial <code>docker-py</code> ni invocar el binario <code>docker</code>. El segundo, de <em>frontend</em>, exige integrar Xterm.js para ofrecer una terminal real en el navegador comunicada por WebSockets bidireccionales. El tercero, denominado <em>modo difícil</em>, exige aplicar límites estrictos de recursos mediante cgroups y namespaces, y destruir automáticamente las instancias por inactividad.</p>
+
+<h2 class="sec">1.2 Problemas a resolver</h2>
+<p>El análisis del contexto identificó cinco problemas concretos que la plataforma debe resolver.</p>
+<ol class="numbered">
+<li><strong>Aislamiento entre estudiantes.</strong> Un participante no debe poder alcanzar, observar ni interferir con el entorno de otro, ni salir a Internet desde el contenedor.</li>
+<li><strong>Protección del servidor anfitrión.</strong> Un proceso descontrolado dentro de un contenedor (agotamiento de memoria, saturación de CPU, <em>fork bomb</em>, etc.) no debe degradar al host ni a los demás contenedores.</li>
+<li><strong>Ciclo de vida automático.</strong> Los entornos abandonados deben destruirse sin intervención humana, incluso cuando un proceso en segundo plano simule actividad.</li>
+<li><strong>Interacción en tiempo real.</strong> La consola del navegador debe comportarse como una terminal real: soporte de secuencias ANSI, redimensionado, pegado seguro y baja latencia.</li>
+<li><strong>Integridad pedagógica.</strong> Cada reto debe resolverse únicamente explotando la vulnerabilidad prevista; no debe existir un atajo como leer la “flag” directamente del sistema de archivos.</li>
+</ol>
+
+<h2 class="sec">1.3 Objetivos</h2>
+<h3 class="subsec">1.3.1 Objetivo general</h3>
+<p>Diseñar, implementar y validar una plataforma CTF que despliegue contenedores Docker aislados bajo demanda por usuario autenticado, con consola interactiva en el navegador, límites de recursos aplicados por el kernel y destrucción automática de instancias, cubriendo las diez categorías del OWASP Top 10 (2021).</p>
+<h3 class="subsec">1.3.2 Objetivos específicos</h3>
+<ol class="numbered">
+<li>Implementar un cliente de la Docker Engine API sobre el socket Unix, incluido el <em>hijacking</em> de la conexión para el flujo de la terminal, sin bibliotecas de alto nivel.</li>
+<li>Construir el orquestador con Django y Django Channels, con un modelo de datos que persista el estado de cada instancia.</li>
+<li>Integrar Xterm.js con un consumidor WebSocket asíncrono que transporte bytes crudos entre el navegador y el proceso del contenedor.</li>
+<li>Aplicar aislamiento de red por usuario y límites de memoria, CPU, procesos y descriptores mediante la configuración <code>HostConfig</code> del contenedor.</li>
+<li>Implementar un “watchdog” que destruya instancias por inactividad y por vida máxima según la dificultad del reto.</li>
+<li>Desarrollar diez retos con separación real de privilegios, uno por categoría del OWASP Top 10, con validación de “flags” y puntaje en el servidor.</li>
+<li>Verificar empíricamente el aislamiento, los límites y la robustez del sistema mediante una suite de pruebas automatizadas y una campaña de pruebas de humo, de estrés y de carga.</li>
+</ol>
+
+<h2 class="sec">1.4 Alcance</h2>
+<p>El alcance del producto mínimo viable (MVP) incluye el orquestador completo, la consola interactiva, el aislamiento de red y recursos, el “watchdog” con doble criterio de destrucción, el catálogo de diez retos, la validación de “flags”, un panel de administración con configuración editable en caliente y vista de instancias en vivo. La plataforma se ejecuta en Linux o en Windows con “WSL2”, porque depende del socket Unix de Docker.</p>
+
+<!-- ============================================================ CAPITULO 2 ============================================================ -->
+<h1 class="chapter">Capítulo 2. Marco Teórico</h1>
+
+<h2 class="sec">2.1 Competencias Capture The Flag como herramienta pedagógica</h2>
+<p>Un CTF es un ejercicio en el que los participantes deben encontrar y explotar vulnerabilidades en sistemas preparados para ello, con el fin de obtener “flags” que demuestran el éxito del ataque. Vigna (2003) documentó tempranamente el valor de los ejercicios prácticos en entornos controlados para la enseñanza de seguridad de redes. Por su parte, Chapman et al. (2014) mostraron con PicoCTF que el formato de juego incrementa la motivación y la retención de conceptos.</p>
+<p>La condición esencial de un CTF educativo es que la “flag” solo sea alcanzable explotando la falla prevista. Si existe un atajo, el reto deja de medir la competencia que pretende enseñar. Este principio guió la decisión de separar privilegios dentro de cada contenedor, descrita en el capítulo 4.</p>
+
+<h2 class="sec">2.2 Contenedores Linux: namespaces y cgroups</h2>
+<p>Un contenedor es un conjunto de procesos que el kernel de Linux aísla del resto del sistema mediante dos mecanismos complementarios. Los <em>namespaces</em> particionan los recursos visibles: un proceso dentro de un namespace de PID solo ve los procesos de ese namespace, uno dentro de un namespace de red solo ve sus propias interfaces y tablas de rutas, y así con los puntos de montaje, los identificadores de usuario y otros recursos (Kerrisk, 2024a). Los <em>control groups</em> (cgroups), por su parte, limitan y contabilizan el uso de recursos (memoria, tiempo de CPU, número de procesos) de un grupo de procesos (Kerrisk, 2024b). Docker combina ambos mecanismos con un sistema de archivos en capas para ofrecer contenedores ligeros y reproducibles (Merkel, 2014).</p>
+<p>Las <em>capabilities</em> de Linux dividen los privilegios del superusuario en unidades independientes (Kerrisk, 2024c). Docker asigna por defecto un subconjunto reducido, pero la práctica recomendada en entornos multiusuario es retirarlas todas y devolver únicamente las estrictamente necesarias (Docker Inc., 2024b). Esta recomendación no es solo teórica: revisiones sobre seguridad de contenedores documentan que los namespaces y los cgroups no bastan por sí solos cuando el conjunto de capacidades y el perfil de <em>seccomp</em> no se configuran de forma restrictiva, porque ambos mecanismos comparten el mismo kernel con el host y una capacidad de más amplía la superficie de ataque disponible (Combe et al., 2016; Sultan et al., 2019).</p>
+
+<h2 class="sec">2.3 Docker Engine API y socket Unix</h2>
+<p>El daemon de Docker expone una API REST sobre el socket Unix. Toda operación del cliente oficial (crear redes, crear y arrancar contenedores, abrir procesos) corresponde a una petición HTTP/1.1 sobre ese socket (Docker Inc., 2024a).</p>
+<p>Para las operaciones de flujo continuo, como adjuntar una terminal a un proceso, la API implementa un mecanismo de <em>hijacking</em>: el cliente envía una petición con las cabeceras <code>Upgrade: tcp</code> y <code>Connection: Upgrade</code>, el daemon responde <code>101 Switching Protocols</code>, y a partir de ese momento la misma conexión transporta bytes crudos en ambas direcciones.</p>
+
+<h2 class="sec">2.4 OWASP Top 10 (2021)</h2>
+<p>El OWASP Top 10 es un documento de concienciación que enumera las diez categorías de riesgo más críticas en aplicaciones web, elaborado a partir de datos de más de 500 000 aplicaciones y de una encuesta a profesionales (OWASP Foundation, 2021). La edición 2021 incluye: A01 Pérdida de control de acceso, A02 Fallas criptográficas, A03 Inyección, A04 Diseño inseguro, A05 Configuración de seguridad incorrecta, A06 Componentes vulnerables y desactualizados, A07 Fallas de identificación y autenticación, A08 Fallas de integridad de software y datos, A09 Fallas de registro y monitoreo, y A10 Falsificación de solicitudes del lado del servidor (SSRF). Cada categoría se asocia a debilidades del catálogo CWE de MITRE (2023), como CWE-89 para inyección SQL o CWE-502 para deserialización insegura. El catálogo de retos del proyecto cubre las diez categorías.</p>
+
+<h2 class="sec">2.5 Arquitectura ASGI, WebSockets y emulación de terminal</h2>
+<p>El protocolo WebSocket, definido en la RFC 6455, establece un canal bidireccional persistente sobre una única conexión TCP, iniciado con un <em>handshake</em> HTTP (Fette &amp; Melnikov, 2011). En el ecosistema Python, la especificación ASGI generaliza la interfaz WSGI para soportar protocolos de larga duración de forma asíncrona (Django Software Foundation, 2024b). Django Channels implementa ASGI para Django e introduce los <em>consumers</em>, clases que manejan conexiones WebSocket; Daphne es el servidor ASGI de referencia (Django Software Foundation, 2024a).</p>
+<p>Xterm.js es un emulador de terminal escrito en TypeScript que interpreta secuencias de escape ANSI en el navegador y expone eventos de entrada y redimensionado (Xterm.js Contributors, 2024).</p>
+
+<h2 class="sec">2.6 Principios de diseño seguro</h2>
+<p>Saltzer y Schroeder (1975) formularon principios que siguen vigentes: el mínimo privilegio (cada componente debe operar con los permisos mínimos necesarios), la mediación completa (toda operación debe verificarse contra la política de acceso), los valores por defecto seguros y la economía de mecanismo. La defensa en profundidad añade que ninguna capa debe ser la única barrera. La guía NIST SP 800-190 traslada estos principios a contenedores: imágenes mínimas, permisos estrictos sobre archivos sensibles, retiro de capacidades, límites de recursos y aislamiento de red (Souppaya et al., 2017).</p>
+
+<h2 class="sec">2.7 Metodologías iterativas e incrementales</h2>
+<p>Frente a los modelos secuenciales, los enfoques iterativos e incrementales construyen el sistema en ciclos cortos, cada uno con un entregable verificable, lo que permite descubrir problemas temprano y ajustar el diseño con evidencia (Sommerville, 2011; Pressman &amp; Maxim, 2015). El concepto de producto mínimo viable (MVP) propone entregar primero el núcleo funcional imprescindible y ampliarlo con base en lo aprendido (Ries, 2011). Estos ciclos cortos con un entregable verificable comparten, además, el espíritu del Manifiesto Ágil de priorizar el software funcionando por sobre la documentación exhaustiva (Beck et al., 2001), aun cuando el proyecto no adoptó un marco ágil formal. El proyecto adoptó una variante de estos principios con iteraciones diarias documentadas, descrita en el capítulo 5.</p>
+
+<!-- ============================================================ CAPITULO 3 ============================================================ -->
+<h1 class="chapter">Capítulo 3. Análisis de Vulnerabilidad</h1>
+
+<p>El análisis de vulnerabilidad se realizó en dos planos. El primero corresponde a las vulnerabilidades pedagógicas: las fallas deliberadas que cada reto expone para que el estudiante las explote. El segundo corresponde a las vulnerabilidades de la plataforma: los vectores por los que un estudiante malintencionado podría atacar al servidor, a otros estudiantes o a la integridad de los retos.</p>
+
+<h2 class="sec">3.1 Modelo de amenazas de la plataforma</h2>
+<p>El modelado de amenazas identifica de forma sistemática los activos, los actores y los vectores de ataque antes de diseñar las contramedidas (Shostack, 2014). Siguiendo ese enfoque, los activos a proteger en esta plataforma son el servidor anfitrión (memoria, CPU, disco, socket de Docker), el entorno de cada estudiante, la base de datos de la plataforma y la integridad de las “flags” y del puntaje. El actor principal es un estudiante autenticado con acceso a una consola dentro de un contenedor; se asume que puede ejecutar cualquier comando disponible en la imagen y que puede actuar de forma hostil. No se considera un atacante externo sin cuenta, porque toda la API exige autenticación de Django.</p>
+
+<div class="table-block">
+<p class="tnum">Tabla 1</p>
+<p class="tcap">Vectores de ataque contra la plataforma identificados en el análisis</p>
+<table>
+<thead><tr><th>Categoría</th><th>Vector</th><th>Impacto potencial</th><th>Contramedida diseñada</th></tr></thead>
+<tbody>
+<tr><td>Recursos</td><td>Reserva de memoria sin freno</td><td>Agotar la RAM del host</td><td><code>Memory</code> 256 MB (cgroup)</td></tr>
+<tr><td>Recursos</td><td>Bucles de CPU concurrentes</td><td>Degradar a otros usuarios</td><td><code>NanoCpus</code> 0,5 núcleos</td></tr>
+<tr><td>Recursos</td><td><em>Fork bomb</em></td><td>Agotar la tabla de procesos</td><td><code>PidsLimit</code> 64 + <code>Init: true</code></td></tr>
+<tr><td>Recursos</td><td>Apertura masiva de archivos</td><td>Agotar descriptores del host</td><td><code>Ulimits</code> nofile 1024/2048</td></tr>
+<tr><td>Recursos</td><td>Llenar el disco</td><td>Inutilizar el host</td><td><code>/tmp</code> en tmpfs de 64 MB; <code>/app</code> de solo lectura por permisos (root:root, 0755)</td></tr>
+<tr><td>Recursos</td><td>Inundar el log del contenedor</td><td>Llenar el disco del host</td><td><code>LogConfig</code> 10 MB × 3</td></tr>
+<tr><td>Red</td><td>Alcanzar el contenedor de otro usuario</td><td>Robo de <em>flags</em>, sabotaje</td><td>Red <code>Internal</code> por usuario</td></tr>
+<tr><td>Red</td><td>Salir a Internet</td><td>Exfiltración, descarga de herramientas</td><td>Sin gateway (<code>Internal: true</code>)</td></tr>
+<tr><td>Red</td><td>Alcanzar servicios del host</td><td>Atacar la propia plataforma</td><td>Sin ruta por defecto; sin <code>docker.sock</code> montado</td></tr>
+<tr><td>Escalada</td><td>Obtener root vía capabilities</td><td>Escape del contenedor</td><td><code>CapDrop: ALL</code> + <code>CapAdd</code> mínimo</td></tr>
+<tr><td>Escalada</td><td>Inyectar módulos vía <code>PYTHONPATH</code> en sudo</td><td>Ejecutar código como root</td><td><code>env_reset</code> de sudo</td></tr>
+<tr><td>Escalada</td><td>Crear <em>user namespace</em></td><td>Ampliar superficie del kernel</td><td>Perfil <em>seccomp</em> por defecto de Docker</td></tr>
+<tr><td>Integridad</td><td>Leer la <em>flag</em> directamente</td><td>Anular el reto</td><td>Archivo <code>root:600</code> + sudo restringido</td></tr>
+<tr><td>Ciclo de vida</td><td>Mantener la instancia viva con salida periódica</td><td>Ocupar recursos indefinidamente</td><td>Vida máxima absoluta</td></tr>
+<tr><td>Ciclo de vida</td><td>Dejar procesos huérfanos al cerrar la consola</td><td>Agotar <code>PidsLimit</code> propio</td><td>Terminación por sesión al desconectar</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">3.2 Vulnerabilidades pedagógicas: los diez retos OWASP</h2>
+<p>Cada reto es una pequeña aplicación de consola escrita en Python que contiene una falla real de la categoría OWASP correspondiente. La Tabla 2 resume la vulnerabilidad, su debilidad CWE asociada y la técnica de explotación esperada.</p>
+
+<div class="table-block">
+<p class="tnum">Tabla 2</p>
+<p class="tcap">Catálogo de retos, categoría OWASP, debilidad CWE y técnica de explotación</p>
+<table>
+<thead><tr><th>Reto (slug)</th><th>OWASP 2021</th><th>Dificultad</th><th>Vulnerabilidad y explotación</th></tr></thead>
+<tbody>
+<tr><td><code>injection-sqli</code></td><td>A03 Inyección</td><td>Básico</td><td>Consulta SQL por concatenación (CWE-89). <em>Bypass</em> del login con <code>admin'--</code>.</td></tr>
+<tr><td><code>idor</code></td><td>A01 Control de acceso</td><td>Básico</td><td>CLI de pedidos sin verificar propietario (CWE-639). Solicitar el pedido 1337 ajeno.</td></tr>
+<tr><td><code>crypto-debil</code></td><td>A02 Fallas criptográficas</td><td>Básico</td><td>Contraseñas con MD5 sin sal (CWE-328). Ataque de diccionario con la <em>wordlist</em> provista.</td></tr>
+<tr><td><code>misconfig</code></td><td>A05 Configuración incorrecta</td><td>Básico</td><td>Respaldo <code>config.yaml.bak</code> legible (CWE-538). Leer credenciales expuestas.</td></tr>
+<tr><td><code>diseno-inseguro</code></td><td>A04 Diseño inseguro</td><td>Intermedio</td><td>Cupón sin límite de usos por compra (CWE-840). Repetir el cupón en una sola invocación.</td></tr>
+<tr><td><code>componente-vulnerable</code></td><td>A06 Componentes vulnerables</td><td>Intermedio</td><td><code>libcalc</code> 1.4.2 usa <code>eval()</code> sin sandbox (CWE-95). Inyectar una expresión Python.</td></tr>
+<tr><td><code>auth-fallas</code></td><td>A07 Autenticación</td><td>Intermedio</td><td>PIN de 4 dígitos sin límite de intentos (CWE-307). Fuerza bruta de 10 000 combinaciones.</td></tr>
+<tr><td><code>logging-fallas</code></td><td>A09 Registro y monitoreo</td><td>Intermedio</td><td>Token de sesión en texto plano en el log (CWE-532). Reutilizar el token.</td></tr>
+<tr><td><code>integridad-datos</code></td><td>A08 Integridad de datos</td><td>Difícil</td><td><code>pickle.load()</code> sobre archivo editable (CWE-502). Deserialización con carga maliciosa.</td></tr>
+<tr><td><code>ssrf</code></td><td>A10 SSRF</td><td>Difícil</td><td>Lista negra sensible a mayúsculas (CWE-918). Evadir el filtro variando el caso del host.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">3.3 Hallazgo crítico: bypass trivial de los retos iniciales</h2>
+<p>Durante la revisión previa a escalar el catálogo, se comprobó que los dos primeros retos podían resolverse sin explotar nada. La consola corría como <code>root</code> dentro del contenedor, de modo que <code>cat /app/flag.txt</code> entregaba la <em>flag</em> de inmediato. Este hallazgo constituye la vulnerabilidad más grave del análisis desde la perspectiva pedagógica, porque anulaba el propósito del sistema. La contramedida adoptada fue la separación real de privilegios: un usuario sin privilegios para la consola, archivos sensibles con permisos 600 de <code>root</code>, y un <code>sudo</code> restringido al comando exacto de la aplicación vulnerable, de modo que la única vía hacia la <em>flag</em> es explotar la falla a través de ese comando.</p>
+
+<!-- ============================================================ CAPITULO 4 ============================================================ -->
+<h1 class="chapter">Capítulo 4. Diseño de la Solución</h1>
+
+<h2 class="sec">4.1 Arquitectura general</h2>
+<p>La solución se organiza en seis capas (Figura 1). La capa de presentación corre en el navegador y contiene Xterm.js. El orquestador ASGI, construido con Django, Channels y Daphne, atiende tanto las peticiones HTTP de control como las conexiones WebSocket de datos. El <em>driver</em> de Docker traduce esas operaciones a peticiones sobre el socket Unix. El daemon de Docker delega en el kernel la creación de namespaces y cgroups. El espacio de aislamiento contiene una red y un contenedor por usuario. Finalmente, el <em>watchdog</em> recorre la base de datos y destruye lo que venció.</p>
+<p>Se separan de forma deliberada dos planos. El plano de control viaja por HTTP con JSON y protección CSRF: iniciar, detener y consultar el estado de la instancia, listar retos y enviar <em>flags</em>. El plano de datos viaja por un WebSocket binario: las pulsaciones de teclas van como bytes crudos hacia el proceso del contenedor, y los eventos de control, como el redimensionado, van como tramas JSON de texto.</p>
+
+<div class="diagram">[Navegador: Xterm.js + fitAddon]
+    | HTTP : /api/instance/{start,stop,status}, /api/challenges/submit
+    | WS   : ws/terminal/ (bytes crudos + JSON resize)
+    v
+[Orquestador ASGI: Daphne + Django + Channels]
+    |-- Vistas HTTP ------------&gt; docker_client (REST)   ------+
+    |-- TerminalConsumer -------&gt; docker_client (hijack) ------+--&gt; /var/run/docker.sock
+    |-- Watchdog (hilo/comando) -&gt; docker_client (REST)   ------+           |
+    |                                                                        v
+    +--&gt; BD SQLite: Instance, SolvedChallenge,          [Docker daemon -&gt; kernel Linux:
+         PlatformSettings, OnboardingState,               namespaces + cgroups + seccomp]
+         InstanceDestructionNotice                                        |
+                                    +-----------------------------------+--+------+
+                                    v                                              v
+                    [Red ctf-net-A (Internal:true)]           [Red ctf-net-B (Internal:true)]
+                    [Contenedor A: 256MB/0,5CPU/64PID]         [Contenedor B: 256MB/0,5CPU/64PID]</div>
+<p class="fig-cap"><em>Figura 1.</em> Arquitectura general del sistema.</p>
+
+<h2 class="sec">4.2 Componentes</h2>
+<h3 class="subsec">4.2.1 Driver de Docker (docker_client.py)</h3>
+<p>Es la única pieza que conoce la API de Docker. Para las operaciones de control usa <code>requests-unixsocket</code> contra los <em>endpoints</em> <code>/networks/create</code>, <code>/containers/create</code>, <code>/containers/{id}/start</code>, <code>/containers/{id}/stop</code>, <code>/containers/{id}/exec</code> y <code>/exec/{id}/resize</code>.</p>
+<h3 class="subsec">4.2.2 Vistas HTTP (views.py)</h3>
+<p>Exponen la API JSON bajo <code>/api/</code>: <code>challenges/</code> devuelve el catálogo con el estado de resolución del usuario; <code>instance/start/</code> crea red y contenedor; <code>instance/stop/</code> los destruye; <code>instance/status/</code> informa el reto activo, el tiempo restante y los umbrales; <code>challenges/submit/</code> valida la <em>flag</em> y acredita XP. Un segundo grupo bajo <code>platform-settings/</code> da soporte al panel oculto de administración: configuración en caliente, instancias en vivo, destrucción manual y gestión de usuarios.</p>
+<h3 class="subsec">4.2.3 Consumidor WebSocket (consumers.py)</h3>
+<p><code>TerminalConsumer</code> hereda de <code>AsyncWebsocketConsumer</code>. Al conectar, localiza la <code>Instance</code> del usuario, crea un <code>exec</code> con el <em>shell</em> adecuado y lanza una tarea lectora. Cada mensaje del navegador se reenvía al socket y actualiza <code>last_activity</code>. Al desconectar, cancela la tarea, cierra el socket y termina por sesión todos los procesos del <code>exec</code>.</p>
+<h3 class="subsec">4.2.4 Catálogo de retos (challenges.py)</h3>
+<p>Es un diccionario en memoria con los diez retos: nombre, categoría OWASP, dificultad, <em>flag</em> dinámica, imagen Docker, objetivo, primer paso y resultado esperado. El cliente solo envía el <em>slug</em>; la imagen real nunca viaja en la petición, lo que impide que un usuario solicite arrancar una imagen arbitraria del host.</p>
+<h3 class="subsec">4.2.5 Watchdog (watchdog.py, apps.py)</h3>
+<p>La función <code>sweep_stale_instances()</code> vive en un único módulo y la usan dos entradas: un hilo integrado que arranca junto al servidor y el comando <code>manage.py watchdog</code>. Recorre todas las instancias, calcula para cada una el tiempo inactivo y el tiempo de vida, y destruye las que superan cualquiera de los dos límites. Si Docker no responde, conserva la fila para reintentar en la siguiente pasada, evitando dejar contenedores huérfanos.</p>
+
+<h2 class="sec">4.3 Modelo de datos</h2>
+<div class="table-block">
+<p class="tnum">Tabla 3</p>
+<p class="tcap">Modelos de datos de la plataforma</p>
+<table>
+<thead><tr><th>Modelo</th><th>Campos principales</th><th>Propósito</th></tr></thead>
+<tbody>
+<tr><td><code>Instance</code></td><td><code>user</code> (OneToOne), <code>challenge</code>, <code>container_id</code>, <code>network_id</code>, <code>network_name</code>, <code>created_at</code>, <code>last_activity</code>, <code>failed_flag_attempts</code></td><td>Estado de la instancia activa de cada usuario. Se elimina al destruir el contenedor. El contador de intentos fallidos sostiene el límite de cinco intentos de <em>flag</em> (sección 6.2).</td></tr>
+<tr><td><code>SolvedChallenge</code></td><td><code>user</code> (FK), <code>challenge_slug</code>, <code>solved_at</code>, <code>xp_awarded</code>; único por (usuario, reto)</td><td>Registro persistente de retos completados y XP ganado.</td></tr>
+<tr><td><code>PlatformSettings</code></td><td><code>inactivity_timeout_seconds</code>, <code>max_lifetime_seconds</code>, <code>time_limit_basico/intermedio/dificil_seconds</code></td><td>Configuración editable en caliente desde <code>/admin/</code> o desde el panel oculto; fila única (<em>singleton</em>).</td></tr>
+<tr><td><code>InstanceDestructionNotice</code></td><td><code>user</code> (FK), <code>motivo</code> (admin / inactividad / vida_máxima), <code>challenge_slug</code>, <code>created_at</code></td><td>Aviso de un solo uso: informa al estudiante por qué se destruyó su instancia cuando no fue él quien lo pidió.</td></tr>
+<tr><td><code>OnboardingState</code></td><td><code>user</code> (OneToOne), <code>tutorial_visto</code>, <code>tour_visto</code>, <code>updated_at</code></td><td>Registra si el estudiante ya vio el tutorial y el recorrido guiado, para mostrarlos una sola vez.</td></tr>
+</tbody>
+</table>
+</div>
+<p>La relación uno a uno entre usuario e instancia es una decisión consciente del MVP: simplifica la lógica de estado.</p>
+
+<h2 class="sec">4.4 Flujos principales</h2>
+<p><strong>Inicio de instancia.</strong> El navegador envía <code>POST /api/instance/start/</code> con el <em>slug</em> del reto. La vista verifica que el usuario no tenga otra instancia, crea la red <code>ctf-net-{usuario}</code> con <code>Internal: true</code>, crea el contenedor con la imagen del catálogo y el <code>HostConfig</code> de la sección 4.5, lo arranca y guarda la fila <code>Instance</code>.</p>
+<p><strong>Sesión de terminal.</strong> Al abrir <code>ws/terminal/</code>, el consumidor crea el <code>exec</code>, realiza el <em>hijack</em> y mantiene dos flujos: del socket al WebSocket (salida del proceso) y del WebSocket al socket (teclas). Los mensajes JSON de tipo <code>resize</code> invocan <code>/exec/{id}/resize</code>.</p>
+<p><strong>Envío de flag.</strong> <code>POST /api/challenges/submit/</code> compara la cadena enviada con la bandera dinámica generada para ese usuario y ese reto. Si coincide y el usuario no había resuelto ese reto, crea <code>SolvedChallenge</code>. Cada intento fallido incrementa <code>failed_flag_attempts</code>; al quinto fallo la instancia se destruye.</p>
+<p><strong>Destrucción.</strong> Ocurre por tres vías: el botón Destruir (<code>POST /api/instance/stop/</code>), el <em>watchdog</em> (inactividad o vida máxima) y el panel de administración. En todos los casos se detiene y elimina el contenedor, se elimina la red y se borra la fila.</p>
+
+<h2 class="sec">4.5 Mecanismos de aislamiento y endurecimiento</h2>
+<p>La configuración <code>HostConfig</code> común a los diez retos concentra las contramedidas del capítulo 3.</p>
+<div class="diagram">"HostConfig": {
+    "NetworkMode": network_name,          # red Internal por usuario
+    "Memory": 256 * 1024 * 1024,          # 256 MB
+    "NanoCpus": 500_000_000,              # 0,5 núcleos
+    "PidsLimit": 64,
+    "CapDrop": ["ALL"],
+    "CapAdd": ["SETUID", "SETGID"],       # solo lo que sudo necesita
+    "Tmpfs": {"/tmp": "rw,noexec,nosuid,size=64m"},
+    "Ulimits": [{"Name": "nofile", "Soft": 1024, "Hard": 2048}],
+    "LogConfig": {"Type": "json-file", "Config": {"max-size": "10m", "max-file": "3"}},
+    "Init": True,                          # tini como PID 1: cosecha zombis
+}</div>
+<p class="fig-cap"><em>Figura 2.</em> Configuración de creación del contenedor (<code>HostConfig</code>).</p>
+<p>No se aplica <code>ReadonlyRootfs</code> sobre el contenedor completo, porque el orquestador necesita inyectar la <em>flag</em> dinámica del estudiante dentro del contenedor antes de arrancarlo, mediante la Docker Engine API. La protección del sistema de archivos se sostiene entonces por permisos: <code>/app</code> y los binarios de cada reto pertenecen a <code>root:root</code> con modo 0755, y el archivo con la <em>flag</em> tiene modo 600, de manera que el usuario sin privilegios de la consola no puede escribir en <code>/app</code> ni leer la <em>flag</em> directamente.</p>
+<p>A nivel de imagen, todos los retos heredan de <code>ctf-base</code> (Alpine con <code>bash</code>, <code>python3</code> y <code>sudo</code>). La consola corre como el usuario sin privilegios <code>retador</code>; la <em>flag</em> y los datos sensibles pertenecen a <code>root</code>; y un archivo en <code>/etc/sudoers.d/</code> autoriza sin contraseña exactamente el comando de la aplicación vulnerable. De este modo, la única vía hacia la <em>flag</em> es explotar la falla a través de ese comando.</p>
+
+<h2 class="sec">4.6 Decisiones de diseño y alternativas descartadas</h2>
+<div class="table-block">
+<p class="tnum">Tabla 4</p>
+<p class="tcap">Decisiones arquitectónicas, alternativas descartadas y justificación</p>
+<table>
+<thead><tr><th>Decisión</th><th>Alternativa descartada</th><th>Justificación</th></tr></thead>
+<tbody>
+<tr><td>Socket Unix directo + <em>hijacking</em> manual</td><td><code>docker-py</code>; <code>subprocess</code> con el binario <code>docker</code></td><td>Cumple la restricción del proyecto sin crear un subproceso por usuario ni fugar descriptores.</td></tr>
+<tr><td>ASGI (Daphne + Channels)</td><td>WSGI síncrono (Gunicorn)</td><td>Cada consola es una conexión de larga duración; WSGI bloquearía un <em>worker</em> por sesión.</td></tr>
+<tr><td>Red <code>Internal</code> por usuario</td><td>Red compartida + reglas <code>iptables</code></td><td>El kernel no crea <em>gateway</em>; aislamiento sin tocar el firewall del host ni requerir root.</td></tr>
+<tr><td>Límites por cgroups en <code>HostConfig</code></td><td>Monitor en Python que mate procesos</td><td>El kernel actúa en tiempo real, durante la propia llamada al sistema.</td></tr>
+<tr><td><em>Watchdog</em> con estado en BD</td><td><code>threading.Timer</code> en memoria</td><td>Sobrevive reinicios del servidor; no deja contenedores huérfanos.</td></tr>
+<tr><td><code>loop.sock_recv()</code> sin hilos</td><td>Hilo bloqueante por consola</td><td>Elimina el techo del pool de hilos y permite cancelación inmediata.</td></tr>
+<tr><td><code>InMemoryChannelLayer</code> y SQLite</td><td>Redis y PostgreSQL</td><td>Suficiente para un proceso y un despliegue de un solo host; el cambio está previsto como mejora futura.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ============================================================ CAPITULO 5 ============================================================ -->
+<h1 class="chapter">Capítulo 5. Metodología de Desarrollo</h1>
+
+<h2 class="sec">5.1 Enfoque adoptado</h2>
+<p>El proyecto siguió una metodología iterativa e incremental orientada a un MVP, con iteraciones de un día y un entregable verificable al final de cada una (Sommerville, 2011). El punto de partida fue un Documento de Diseño de Software (SDD) que fijó objetivo, alcance, arquitectura, modelo de datos, flujos, decisiones de diseño y exclusiones explícitas. A partir de él se elaboró un plan de siete días para el MVP, que luego se extendió para incorporar el catálogo OWASP, el panel de administración, la auditoría adversarial y, en una fase final, una suite de pruebas automatizadas.</p>
+
+<h2 class="sec">5.2 Iteraciones</h2>
+<div class="table-block">
+<p class="tnum">Tabla 5</p>
+<p class="tcap">Iteraciones del proyecto, objetivo y resultado verificable</p>
+<table class="compact">
+<thead><tr><th>Día</th><th>Objetivo</th><th>Resultado verificable</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Cliente de la Docker Engine API sin SDK</td><td>Crear, arrancar y destruir contenedores por el socket; <em>hijack</em> del <code>exec</code></td></tr>
+<tr><td>2</td><td>Orquestador en Django</td><td>Modelo <code>Instance</code>, vistas start/stop, login</td></tr>
+<tr><td>3</td><td>Aislamiento de red y límites de recursos</td><td>Pruebas 1–10: aislamiento y límites contenidos bajo ataque</td></tr>
+<tr><td>4</td><td>Destrucción automática</td><td><em>Watchdog</em> por inactividad, integrado y como comando</td></tr>
+<tr><td>5</td><td>Consola WebSocket + Xterm.js</td><td>Terminal funcional con <em>resize</em> y <em>bracketed paste</em></td></tr>
+<tr><td>6</td><td>Integración y pruebas de fuga</td><td>Tres escenarios de abandono y abuso; hueco de salida periódica medido</td></tr>
+<tr><td>7</td><td>Vida máxima absoluta</td><td>Instancia con salida constante destruida</td></tr>
+<tr><td>8–9</td><td>Retos OWASP</td><td>Diez retos con separación de privilegios, 10/10 verificados de punta a punta</td></tr>
+<tr><td>10</td><td>Guía por reto</td><td>Objetivo, primer paso y resultado esperado en el catálogo</td></tr>
+<tr><td>11–13</td><td>Correcciones de interfaz</td><td><code>SolvedChallenge</code>, validación en servidor, caché de estáticos, modal oculto</td></tr>
+<tr><td>14–15</td><td>Configuración en caliente y tiempo por dificultad</td><td><code>PlatformSettings</code> editable desde <code>/admin/</code>, reloj en la interfaz</td></tr>
+<tr><td>16</td><td>Panel de instancias en vivo y auditoría adversarial</td><td>4 bugs corregidos, 17 vectores verificados, 4 riesgos aceptados, 0 fallas abiertas</td></tr>
+<tr><td>17</td><td>Suite de pruebas automatizadas y campaña de validación</td><td>84 pruebas unitarias, 10 pruebas de humo, 8 pruebas de estrés con comparativo y 20/20 consolas de carga; 3 defectos nuevos documentados</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">5.3 Herramientas y entorno</h2>
+<p>El desarrollo se realizó sobre Ubuntu en WSL2 con Docker Desktop (Engine 28.5.1) y Python 3.11. Las dependencias se fijaron en <code>requirements.txt</code>: Django 5, Channels 4, Daphne 4, <code>requests-unixsocket</code> 0.3 y <code>urllib3</code>. El entorno virtual y la base SQLite se ubican en el sistema de archivos nativo de Linux.</p>
+
+<!-- ============================================================ CAPITULO 6 ============================================================ -->
+<h1 class="chapter">Capítulo 6. Implementación y Pruebas</h1>
+
+<h2 class="sec">6.1 Stack tecnológico</h2>
+<div class="table-block">
+<p class="tnum">Tabla 6</p>
+<p class="tcap">Tecnologías empleadas por capa</p>
+<table>
+<thead><tr><th>Capa</th><th>Tecnología</th><th>Rol</th></tr></thead>
+<tbody>
+<tr><td>Frontend</td><td>HTML, CSS, JavaScript, Xterm.js con <code>fitAddon</code></td><td>Emulación de terminal, login, selección de retos, envío de <em>flags</em></td></tr>
+<tr><td>Servidor</td><td>Django 5, Django Channels 4, Daphne 4</td><td>Vistas HTTP, consumidor WebSocket, ASGI, <code>ASGIStaticFilesHandler</code></td></tr>
+<tr><td>Docker</td><td><code>requests-unixsocket</code>, socket de la biblioteca estándar</td><td>REST de control y <em>hijacking</em> del <code>exec</code></td></tr>
+<tr><td>Persistencia</td><td>SQLite (migraciones de Django)</td><td><code>Instance</code>, <code>SolvedChallenge</code>, <code>PlatformSettings</code>, <code>OnboardingState</code>, <code>InstanceDestructionNotice</code></td></tr>
+<tr><td>Retos</td><td>Docker, Alpine, Python 3, <code>sudo</code></td><td>Diez imágenes derivadas de <code>ctf-base</code></td></tr>
+<tr><td>Sistema</td><td>Linux (WSL2), cgroups v2, namespaces, <em>seccomp</em></td><td>Aislamiento y límites reales</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">6.2 Implementación de los componentes clave</h2>
+<h3 class="subsec">6.2.1 Hijacking del exec</h3>
+<p>La implementación manual del protocolo de <em>hijack</em> fue un reto. El cliente envía sobre el socket Unix una petición como la siguiente y lee hasta el fin de las cabeceras; si el estado es 101, el resto del flujo son bytes.</p>
+<div class="diagram">POST /exec/{exec_id}/start HTTP/1.1
+Host: docker
+Content-Type: application/json
+Connection: Upgrade
+Upgrade: tcp
+Content-Length: ...
+
+{"Detach": false, "Tty": true}</div>
+<p class="fig-cap"><em>Figura 3.</em> Petición de <em>hijack</em>.</p>
+<p>La primera versión usaba <code>sync_to_async</code> con un hilo bloqueado en <code>recv()</code> por cada consola. La prueba de carga del día 6 mostró un techo duro cercano al tamaño del <em>pool</em> de hilos de Python (<code>min(32, CPUs + 4)</code>) y fuga de hilos cuando una conexión moría sin cerrarse. La corrección consistió en poner el socket en modo no bloqueante y leerlo con <code>loop.sock_recv()</code>, lo que eliminó el techo y permitió que <code>task.cancel()</code> surta efecto de inmediato. La sección 6.6 documenta la medición que confirma esta corrección con veinte consolas simultáneas.</p>
+<h3 class="subsec">6.2.2 Doble criterio de destrucción</h3>
+<p>El <em>watchdog</em> evalúa dos condiciones independientes para cada instancia: inactividad y vida máxima. La vida máxima se introdujo tras notar que un bucle con salida periódica (<code>while true; do date; sleep 3; done &amp;</code>) mantenía <code>last_activity</code> fresco indefinidamente.</p>
+<h3 class="subsec">6.2.3 Terminación por sesión</h3>
+<p>Al desconectar una consola, <code>terminate_console()</code> agrupa los procesos del contenedor por identificador de sesión y los termina, para no dejar procesos huérfanos consumiendo el cupo de <code>PidsLimit</code> del propio estudiante.</p>
+
+<h2 class="sec">6.3 Estrategia y niveles de prueba</h2>
+<p>La verificación del sistema se organizó en cuatro niveles, de menor a mayor contacto con el entorno real. Los dos primeros responden si el sistema está bien construido; los dos últimos, si resiste el uso bajo condiciones adversas. El criterio transversal, aplicado desde la auditoría del día 16, fue no comprobar únicamente que el sistema funciona, sino intentar romperlo de forma deliberada.</p>
+<div class="table-block">
+<p class="tnum">Tabla 7</p>
+<p class="tcap">Niveles de verificación aplicados al sistema</p>
+<table>
+<thead><tr><th>Nivel</th><th>Qué verifica</th><th>Entorno</th><th>Casos</th></tr></thead>
+<tbody>
+<tr><td>Unitario</td><td>Lógica del orquestador aislada: catálogo, banderas, modelos, API y <em>watchdog</em></td><td>Docker sustituido por dobles de prueba</td><td>84</td></tr>
+<tr><td>Humo</td><td>Ciclo de vida completo de una instancia contra el motor real</td><td>Docker Engine real</td><td>10</td></tr>
+<tr><td>Estrés</td><td>Resistencia del aislamiento ante ataques ejecutados desde el contenedor</td><td>Docker real, dos configuraciones por prueba</td><td>8</td></tr>
+<tr><td>Carga</td><td>Comportamiento del sistema con veinte estudiantes simultáneos</td><td>Servidor Daphne y veinte contenedores reales</td><td>7 fases</td></tr>
+</tbody>
+</table>
+</div>
+<p>En el nivel de estrés, cada ataque se ejecuta dos veces: primero sobre un contenedor sin los límites de la plataforma y después sobre uno con la configuración real descrita en la sección 4.5. De este modo la contención que ofrece el kernel queda medida por contraste y no solamente afirmada. La campaña completa se ejecutó sobre un equipo con 12 núcleos y 7,6 GB de RAM, bajo WSL2 con Docker Engine 28.5.1, contra la revisión del repositorio identificada como <code>33cf672</code>.</p>
+
+<h2 class="sec">6.4 Pruebas unitarias automatizadas</h2>
+<p>Se construyó una suite de ochenta y cuatro casos en el paquete <code>ctf/tests/</code>, organizada en cinco módulos. Ninguno requiere Docker: las llamadas al motor de contenedores se sustituyen por dobles de prueba (<em>mocks</em>), de modo que la suite se ejecuta en cualquier equipo, sin depender de un daemon de Docker disponible, y puede incorporarse a un flujo de integración continua. La ejecución completa (<code>python manage.py test ctf.tests</code>) toma 8,35 segundos y no registra fallos.</p>
+<div class="table-block">
+<p class="tnum">Tabla 8</p>
+<p class="tcap">Módulos de la suite unitaria y riesgo que cubre cada uno</p>
+<table>
+<thead><tr><th>Módulo</th><th>Riesgo que cubre</th><th>Casos</th></tr></thead>
+<tbody>
+<tr><td><code>test_challenges</code></td><td>Que un estudiante acredite un reto sin explotar la vulnerabilidad, o que el catálogo público filtre una bandera</td><td>20</td></tr>
+<tr><td><code>test_views</code></td><td>Que la API atienda a un usuario no autenticado, o que un fallo de Docker a mitad del despliegue deje recursos sin liberar</td><td>23</td></tr>
+<tr><td><code>test_seguridad</code></td><td>Que una modificación posterior elimine un límite de recursos sin que nadie lo advierta</td><td>16</td></tr>
+<tr><td><code>test_models</code></td><td>Que un estudiante acumule más de una instancia o duplique su progreso</td><td>13</td></tr>
+<tr><td><code>test_watchdog</code></td><td>Que las instancias abandonadas no se liberen, o que un fallo de Docker deje contenedores huérfanos</td><td>12</td></tr>
+</tbody>
+</table>
+</div>
+<p>El módulo <code>test_seguridad</code> cumple una función particular: intercepta la petición que el orquestador envía al socket de Docker y comprueba que contenga los límites de memoria, procesador, procesos, descriptores, capacidades y montajes descritos en la sección 4.5. Opera como salvaguarda ante regresiones, porque un cambio que suprima alguno de esos parámetros —por ejemplo, <code>PidsLimit</code> o la red <code>Internal</code>— hace fallar la suite antes de llegar a producción. El módulo <code>test_views</code> verifica además la regla de negocio más delicada de la API: si Docker falla a mitad de un despliegue, la vista debe eliminar cualquier red o contenedor que ya se hubiera creado, para no dejar recursos huérfanos sin una fila que los reclame; y el módulo <code>test_watchdog</code> verifica la contraparte de esa misma regla, que si el fallo ocurre durante la destrucción, la fila debe conservarse para reintentar en el siguiente barrido.</p>
+
+<h2 class="sec">6.5 Pruebas de aislamiento</h2>
+<p>Antes de las diez pruebas de aislamiento, se verificó el ciclo de vida completo de una instancia contra el motor real de Docker, sin dobles de prueba: creación de la red interna, creación y arranque del contenedor, inyección de la bandera dinámica del estudiante, lectura de los límites desde la interfaz de <em>cgroups</em> del propio contenedor, apertura del <code>exec</code> de la consola, aparición del contenedor en el inventario que usa el panel de administración, y destrucción sin residuos en el host. Las diez comprobaciones resultaron correctas.</p>
+<p>Dos de esas pruebas de humo confirman empíricamente la integridad pedagógica descrita en la sección 3.3: el archivo que contiene la bandera del reto <em>idor</em> no es legible con <code>cat</code> por el usuario sin privilegios, que recibe “permiso denegado”; en cambio, la bandera sí se obtiene al ejecutar la aplicación vulnerable a través del <code>sudo</code> restringido descrito en la sección 4.5. La Tabla 9 recoge las diez pruebas de aislamiento y de límites de recursos ejecutadas contra un contenedor de estudiante.</p>
+<div class="table-block">
+<p class="tnum">Tabla 9</p>
+<p class="tcap">Pruebas de aislamiento y de límites de recursos</p>
+<table class="compact">
+<thead><tr><th>N.º</th><th>Prueba</th><th>Resultado</th></tr></thead>
+<tbody>
+<tr><td>1–2</td><td>Dos usuarios con instancias simultáneas, red y contenedor propios</td><td>Correcto; redes separadas</td></tr>
+<tr><td>3</td><td>Alcanzar el contenedor del otro usuario (<em>ping</em>, <em>wget</em>, TCP directo, ruta manual)</td><td>Bloqueado: <code>Network unreachable</code></td></tr>
+<tr><td>4</td><td>Escanear vecinos de la propia red</td><td>Solo el propio contenedor</td></tr>
+<tr><td>5</td><td>Salida a Internet (<code>wget http://1.1.1.1</code>)</td><td>Bloqueado: sin ruta por defecto</td></tr>
+<tr><td>6</td><td>Alcanzar servicios del host y la plataforma</td><td>Sin servicios alcanzables; <code>docker.sock</code> no montado</td></tr>
+<tr><td>7</td><td>Reservar memoria sin freno</td><td>Contenido: contenedor vivo</td></tr>
+<tr><td>8</td><td>Cuatro bucles infinitos de CPU</td><td>Contenido: uso topado en 49–55 %</td></tr>
+<tr><td>9</td><td><em>Fork bomb</em> <code>:(){ :|:&amp; };:</code></td><td>Contenido: <code>can't fork</code>, host intacto</td></tr>
+<tr><td>10</td><td>Estado del host y del testigo</td><td>Sin degradación: 8–19 ms en todo momento</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">6.6 Pruebas de estrés y de carga</h2>
+<p>Las pruebas de estrés repiten ocho de los ataques anteriores en dos configuraciones —sin los límites de la plataforma y con ellos— para medir la contención por contraste. Se ejecutaron sobre la imagen base del catálogo (<code>ctf-base:latest</code>).</p>
+<div class="table-block">
+<p class="tnum">Tabla 10</p>
+<p class="tcap">Comparativo de las pruebas de estrés, sin límites y con la configuración de la plataforma</p>
+<table class="compact">
+<thead><tr><th>Ataque</th><th>Sin los límites</th><th>Con la plataforma</th><th>Qué lo impide</th></tr></thead>
+<tbody>
+<tr><td>Bomba de procesos (200 solicitados)</td><td>200 procesos creados</td><td>62 procesos; bloqueado por el kernel</td><td>cgroup <code>pids</code> (<code>PidsLimit</code> 64)</td></tr>
+<tr><td>Agotar memoria (pedir 400 MB)</td><td>400 MB asignados</td><td>Detenido con código 137 (OOM)</td><td>cgroup <code>memory</code> + tope de <em>swap</em></td></tr>
+<tr><td>Saturar CPU (bucle infinito)</td><td>100,25 % de uso</td><td>50,02 % de uso</td><td>Planificador CFS (<code>NanoCpus</code>)</td></tr>
+<tr><td>Salir a Internet</td><td>Conectado a 1.1.1.1</td><td><code>Network unreachable</code></td><td>Red <code>Internal</code></td></tr>
+<tr><td>Alcanzar a otro estudiante</td><td>Servicio ajeno visible</td><td><code>Network unreachable</code></td><td>Una red por usuario</td></tr>
+<tr><td>Privilegios de <code>root</code></td><td>14 capacidades activas; <code>chown</code> permitido</td><td>2 capacidades activas; <code>chown</code> denegado</td><td><code>CapDrop: ALL</code></td></tr>
+<tr><td>Descriptores de archivo</td><td>1 048 576 disponibles</td><td>1 024 disponibles</td><td><code>Ulimits nofile</code></td></tr>
+<tr><td>Perfil completo aplicado</td><td>—</td><td>6 de 6 límites verificados juntos</td><td>cgroups + namespaces</td></tr>
+</tbody>
+</table>
+</div>
+<p>En los ocho casos, quien detiene el ataque es el kernel de Linux, no código de la aplicación: el planificador y los <em>cgroups</em> deciden durante la propia llamada al sistema, antes de conceder el recurso, lo que confirma en la práctica el principio de mínimo privilegio descrito en la sección 2.6. La prueba de memoria reveló además que el límite declarado de 256 MB es, sin un tope explícito de <em>swap</em>, efectivamente el doble en la práctica; este hallazgo se documenta en la sección 7.3.</p>
+<p>La prueba de carga somete al sistema a veinte estudiantes simultáneos que se autentican, despliegan su instancia, abren la consola, ejecutan una orden y liberan los recursos, contra un servidor Daphne real y veinte contenedores verdaderos. La Tabla 11 registra la medición original del día 6, que motivó la corrección descrita en la sección 6.2.1.</p>
+<div class="table-block">
+<p class="tnum">Tabla 11</p>
+<p class="tcap">Prueba de carga con veinte consolas simultáneas, antes y después de la corrección (medición del día 6)</p>
+<table class="compact">
+<thead><tr><th>Medición</th><th>Antes</th><th>Después</th></tr></thead>
+<tbody>
+<tr><td>Consolas que ejecutaron el comando</td><td>0 / 20</td><td>20 / 20</td></tr>
+<tr><td>Hilos del servidor</td><td>16 (tope del <em>pool</em>)</td><td>14</td></tr>
+<tr><td>Estado de los hilos</td><td><code>unix_stream_read_generic</code> (bloqueados)</td><td><code>futex_wait_queue</code> (ociosos)</td></tr>
+<tr><td>Sockets a Docker sin consolas abiertas</td><td>25 (filtrados)</td><td>3</td></tr>
+<tr><td><code>POST /api/instance/start/</code></td><td>Timeout a los 30 s</td><td>14 ms</td></tr>
+<tr><td>Fugas de procesos en 25 reconexiones</td><td>1 por reconexión</td><td>0</td></tr>
+</tbody>
+</table>
+</div>
+<p>La campaña de esta sesión repitió la prueba de carga en un equipo distinto, con veinte estudiantes simulados desplegando el reto <code>injection-sqli</code>. Las veinte instancias se crearon correctamente en 7,79 segundos (latencia media de 5,71 s por instancia) y las veinte consolas WebSocket ejecutaron la orden enviada, con una latencia media de 1,63 s. La medición de hilos del servidor, tomada tanto durante el arranque de las consolas como con las veinte ya abiertas y en reposo, no registró ningún hilo bloqueado en entrada o salida de socket: los diecisiete hilos presentes permanecieron en estado <code>futex_wait_queue</code>, es decir, ociosos. El dato resulta concluyente porque ese equipo dispone de doce núcleos, de modo que el <em>pool</em> de hilos de Python admite un máximo de dieciséis; si cada consola retuviera un hilo propio, veinte sesiones simultáneas serían aritméticamente imposibles. Al finalizar, las veinte instancias se liberaron en 12,40 segundos y no quedó ninguna fila huérfana en la base de datos.</p>
+
+<h2 class="sec">6.7 Pruebas de los retos</h2>
+<p>Cada reto se verificó en cuatro pasos con <code>docker run</code> aislado: el <em>bypass</em> directo (<code>cat flag.txt</code>) falla; ejecutar la aplicación sin <code>sudo</code> falla porque no puede abrir el archivo protegido; el uso normal con <code>sudo</code> no entrega la <em>flag</em>; y solo la explotación de la vulnerabilidad la revela. Después se probó cada reto de punta a punta contra la plataforma real: inicio de sesión, selección del <em>slug</em>, <code>start_instance</code>, consola WebSocket, comandos del estudiante, obtención de la <em>flag</em> y destrucción.</p>
+
+<!-- ============================================================ CAPITULO 7 ============================================================ -->
+<h1 class="chapter">Capítulo 7. Resultados</h1>
+
+<p>La Tabla 12 contrasta cada objetivo específico con la evidencia que respalda su cumplimiento.</p>
+<div class="table-block">
+<p class="tnum">Tabla 12</p>
+<p class="tcap">Cumplimiento de los objetivos específicos</p>
+<table class="compact">
+<thead><tr><th>Objetivo específico</th><th>Estado</th><th>Evidencia</th></tr></thead>
+<tbody>
+<tr><td>Cliente de la Docker Engine API sin SDK, con <em>hijacking</em></td><td>Cumplido</td><td><code>docker_client.py</code>: REST sobre socket Unix y <code>HijackedExecSocket</code> sin hilos</td></tr>
+<tr><td>Orquestador Django con estado persistente</td><td>Cumplido</td><td>Cinco modelos (<code>Instance</code>, <code>SolvedChallenge</code>, <code>PlatformSettings</code>, <code>OnboardingState</code>, <code>InstanceDestructionNotice</code>); nueve migraciones</td></tr>
+<tr><td>Consola Xterm.js con WebSocket asíncrono</td><td>Cumplido</td><td><code>TerminalConsumer</code>; 20/20 consolas simultáneas verificadas en dos campañas; <em>bracketed paste</em>; reconexión sin fugas</td></tr>
+<tr><td>Aislamiento de red y límites de recursos</td><td>Cumplido</td><td>Pruebas 1–10 del día 3; auditoría del día 16; comparativo de estrés de la sección 6.6</td></tr>
+<tr><td><em>Watchdog</em> por inactividad y vida máxima</td><td>Cumplido</td><td>Destrucción verificada a los 61 s y 34 s en los escenarios de fuga; 12 pruebas unitarias del módulo <code>test_watchdog</code></td></tr>
+<tr><td>Diez retos OWASP con separación de privilegios y puntaje</td><td>Cumplido</td><td>10/10 verificados de punta a punta; validación de bandera dinámica en servidor</td></tr>
+<tr><td>Verificación empírica de aislamiento, límites y robustez</td><td>Cumplido</td><td>84 pruebas unitarias, 10 de humo, 8 de estrés y 20/20 de carga; 3 defectos nuevos detectados y documentados (sección 7.3)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 class="sec">7.1 Resultados cuantitativos</h2>
+<ul class="bulleted">
+<li>Creación de instancia: ~0,87 s por usuario (0,77–1,01 s) en la medición original; 5,71 s de media en la campaña de carga de veinte usuarios simultáneos de esta sesión.</li>
+<li>Consolas simultáneas: 20 de 20 funcionales en dos campañas independientes, sin techo por hilos; cero hilos bloqueados en entrada o salida de socket con las veinte consolas abiertas.</li>
+<li>Latencia del host bajo ataque simultáneo de tres usuarios: 8–19 ms, sin degradación.</li>
+<li>Límites verificados: 268 435 456 B de memoria, 49–55 % de CPU, 64 procesos, ~1024 descriptores, 64 MB en <code>/tmp</code>.</li>
+<li>Fugas de procesos en 25 reconexiones: 0. Huérfanos tras la corrida completa de retos: 0.</li>
+<li>Cobertura OWASP: 10 de 10 categorías, con dificultad y guía por reto.</li>
+<li>Suite automatizada: 84 casos unitarios ejecutados en 8,35 s, sin fallos ni dependencia de Docker.</li>
+<li>Verificación contra Docker real: 10 de 10 pruebas de humo correctas, sin residuos en el host tras la destrucción.</li>
+<li>Contención de estrés medida por contraste: 200 procesos sin límite frente a 62 con él; 100,25 % de CPU frente a 50,02 %; salida a Internet y acceso al entorno de otro estudiante bloqueados en ambos casos con la configuración de la plataforma.</li>
+</ul>
+
+<h2 class="sec">7.2 Resultados cualitativos</h2>
+<p>El sistema cumple los tres retos planteados: <em>backend</em> sin SDK, <em>frontend</em> con terminal real y <em>modo difícil</em> con contención por kernel y destrucción automática. Más allá de lo exigido, incorporó un catálogo completo alineado a OWASP, puntaje persistente, configuración en caliente y un panel de instancias en vivo. El proceso dejó como subproducto una documentación extensa —dieciséis reportes de iteración más la campaña de pruebas automatizadas descrita en el capítulo 6— que registra no solo lo que funciona, sino también lo que falló, cómo se midió y cómo se corrigió.</p>
+
+<h2 class="sec">7.3 Defectos detectados por la campaña de validación</h2>
+<p>La campaña de pruebas de esta sesión no se limitó a confirmar el comportamiento esperado: detectó tres defectos que la configuración declarada de la plataforma ocultaba. Ninguno de los tres compromete el aislamiento entre estudiantes verificado en la sección 6.5; los tres afectan la capacidad real del sistema o el aprovechamiento de sus recursos.</p>
+<div class="table-block">
+<p class="tnum">Tabla 13</p>
+<p class="tcap">Defectos detectados, evidencia medida y corrección propuesta</p>
+<table>
+<thead><tr><th>Defecto</th><th>Evidencia medida</th><th>Corrección propuesta</th></tr></thead>
+<tbody>
+<tr><td>El techo de instancias simultáneas lo impone la red de Docker, no la memoria del host</td><td>Al elevar la prueba de carga a treinta estudiantes, seis despliegues fallaron con error 500. Docker agota sus rangos de direcciones predefinidos alrededor de la red número veinticuatro: <code>all predefined address pools have been fully subnetted</code></td><td>Declarar un rango de direcciones propio en <code>daemon.json</code> (por ejemplo, base <code>10.200.0.0/16</code> con máscara <code>/24</code>, que habilita 256 redes)</td></tr>
+<tr><td>El límite de memoria efectivo por contenedor duplica al declarado</td><td>Con el límite de 256 MB vigente, un contenedor asignó 400 MB sin ser detenido; al declarar también el tope de <em>swap</em>, el kernel detuvo la asignación con código 137</td><td>Añadir <code>"MemorySwap": mem_limit_bytes</code> a la configuración de creación del contenedor</td></tr>
+<tr><td>La destrucción de cada instancia desperdicia cinco segundos</td><td>El proceso principal del contenedor no atiende <code>SIGTERM</code>, de modo que Docker agota el plazo de gracia completo antes de forzar el cierre: 5,30 s frente a 0,37 s sin esa espera</td><td>Reducir el plazo de gracia en <code>stop_container()</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>El primer defecto corrige, además, la estimación de capacidad ofrecida en el capítulo 8 de versiones anteriores de este documento: el límite práctico de estudiantes concurrentes con la configuración predeterminada de Docker no son los contenedores que permitiría la memoria del host, sino las redes que el daemon puede asignar, del orden de veinticuatro a treinta y una con esa configuración.</p>
+
+<!-- ============================================================ CAPITULO 8 ============================================================ -->
+<h1 class="chapter">Capítulo 8. Conclusiones y Mejoras Futuras</h1>
+
+<h2 class="sec">8.1 Conclusiones</h2>
+<p>Primero, es posible construir un orquestador de contenedores funcional y seguro hablando directamente con la Docker Engine API. La restricción de no usar SDK, lejos de ser un obstáculo artificial, obligó a comprender el protocolo de <em>hijacking</em> y condujo a una implementación más ligera que la alternativa por subprocesos.</p>
+<p>Segundo, el aislamiento efectivo en un entorno multiusuario no proviene de una sola medida sino de la superposición de varias: red interna sin <em>gateway</em>, cgroups para memoria, CPU y procesos, retiro de capacidades, permisos estrictos sobre los datos sensibles, límites de descriptores y un <code>init</code> real. La auditoría adversarial y la campaña de pruebas de estrés mostraron que cada capa cubre un vector que las demás no cubren, en línea con el principio de defensa en profundidad (Saltzer &amp; Schroeder, 1975; Souppaya et al., 2017).</p>
+<p>Tercero, la verificación empírica descubrió defectos que la configuración declarada ocultaba: el techo del <em>pool</em> de hilos, la instancia inmortal por salida periódica, el <em>bypass</em> de los retos con <code>cat</code>, los zombis de la <em>fork bomb</em>, los huérfanos al cerrar la consola y, en la campaña más reciente, el límite real de memoria duplicado por el <em>swap</em> y el techo de concurrencia impuesto por las redes de Docker. Ninguno de ellos habría aparecido sin atacar el sistema de forma deliberada. Esta conclusión respalda la práctica de cerrar cada iteración con pruebas que intenten romper lo construido, y de automatizar esas pruebas para que se repitan sin esfuerzo adicional.</p>
+<p>Cuarto, la integridad pedagógica de un CTF depende de la separación de privilegios dentro del contenedor. El patrón adoptado —usuario sin privilegios, dato sensible de <code>root</code> con modo 600 y <code>sudo</code> restringido al comando exacto— es reutilizable para cualquier reto futuro, y quedó verificado tanto manualmente como por la suite automatizada del módulo <code>test_challenges</code>.</p>
+<p>Quinto, la metodología iterativa con reportes diarios produjo una trazabilidad completa entre requisitos, decisiones, pruebas y correcciones, lo que facilitó tanto el desarrollo como la elaboración de este documento.</p>
+
+<h2 class="sec">8.2 Limitaciones</h2>
+<p>El sistema se diseñó y se validó como un despliegue de un solo anfitrión, con un único proceso de servidor, un único demonio de Docker y un archivo SQLite. De ese supuesto se derivan las limitaciones siguientes.</p>
+<p>Primero, la concurrencia real está acotada por los rangos de direcciones que Docker asigna a sus redes antes que por la memoria del equipo, según se documenta en la sección 7.3: entre veinticuatro y treinta y un estudiantes simultáneos con la configuración predeterminada del daemon.</p>
+<p>Segundo, no existe un límite global de instancias a nivel de plataforma, sino únicamente la restricción de una instancia activa por usuario. El total de contenedores desplegables a la vez es, en la práctica, lo que el anfitrión resista.</p>
+<p>Tercero, SQLite serializa las escrituras y el consumidor de la terminal actualiza <code>last_activity</code> durante toda la sesión; con concurrencia suficiente, esa contención de escritura puede convertirse en el cuello de botella del sistema antes que el cómputo o la red.</p>
+<p>Cuarto, <code>InMemoryChannelLayer</code> y el hilo integrado del <em>watchdog</em> impiden ejecutar más de un proceso de servidor sin trabajo adicional de configuración, lo que limita el escalado horizontal de la capa web.</p>
+<p>Quinto, las mediciones de aislamiento de red se realizaron sobre WSL2 con Docker Desktop. La prueba de acceso a servicios del host (prueba 6, sección 6.5) no alcanzó ningún servicio por una particularidad de ese entorno, y debe repetirse en un servidor Linux de producción antes de tomar ese resultado como definitivo.</p>
+
+<h2 class="sec">8.3 Mejoras futuras</h2>
+<ol class="numbered">
+<li><strong>Ampliar el espacio de direcciones de Docker y fijar un límite global de instancias.</strong> La configuración predeterminada del daemon agota sus rangos de red alrededor de la instancia número veinticuatro (sección 7.3), lo que acota la concurrencia por debajo de lo que permitiría la memoria disponible. Declarar un rango de direcciones propio en <code>daemon.json</code> eleva ese techo a 256 redes; hecho eso, conviene fijar además un límite global de instancias simultáneas, del que hoy se carece.</li>
+<li><strong>PostgreSQL y Redis.</strong> SQLite serializa cada escritura y cada tecla actualiza <code>last_activity</code>; <code>InMemoryChannelLayer</code> no escala a varios procesos. Ambos cambios están anticipados en el SDD.</li>
+<li><strong>Perfil <em>seccomp</em> personalizado.</strong> Hoy se usa el perfil por defecto de Docker. Un perfil más estricto reduciría aún más la superficie del kernel expuesta.</li>
+<li><strong>Manejo de errores cuando Docker no responde.</strong> El error 500 actual es crudo; conviene detectar el estado del daemon y comunicarlo con claridad al usuario.</li>
+<li><strong>Ranking y métricas de aprendizaje.</strong> El modelo <code>SolvedChallenge</code> permite construir tablas de posiciones, tiempos de resolución y estadísticas por categoría OWASP para el docente.</li>
+<li><strong>Instancias múltiples por usuario.</strong> Sustituir la relación uno a uno por una relación uno a muchos con un tope configurable.</li>
+<li><strong>Reverificación del acceso al host en despliegue real.</strong> La prueba 6 del día 3 no alcanzó servicios del host por una particularidad de Docker Desktop; debe repetirse en un servidor Linux de producción.</li>
+<li><strong>Declarar el tope de intercambio de memoria (<em>swap</em>).</strong> El límite vigente permite que cada contenedor duplique su cuota de memoria usando <em>swap</em> del host, según se documenta en la sección 7.3.</li>
+<li><strong>Acelerar la destrucción de instancias.</strong> Reducir el plazo de gracia de la detención de contenedores recorta el tiempo de liberación de 5,30 s a 0,37 s por instancia (sección 7.3).</li>
+</ol>
+
+<!-- ============================================================ REFERENCIAS ============================================================ -->
+<h1 class="ref-title">Referencias</h1>
+<div class="ref-list">
+<p>Beck, K., Beedle, M., van Bennekum, A., Cockburn, A., Cunningham, W., Fowler, M., Grenning, J., Highsmith, J., Hunt, A., Jeffries, R., Kern, J., Marick, B., Martin, R. C., Mellor, S., Schwaber, K., Sutherland, J., &amp; Thomas, D. (2001). <em>Manifesto for Agile Software Development</em>. https://agilemanifesto.org/</p>
+<p>Castellanos, D., Pérez, S., Guillén, A., Agostini, P., &amp; Peña, J. (2026). <em>Orquestador-daemon: Plataforma CTF con contenedores dinámicos</em> [Código fuente y documentación]. GitHub. https://github.com/Daniel132005/Orquestador-daemon</p>
+<p>Chapman, P., Burket, J., &amp; Brumley, D. (2014). PicoCTF: A game-based computer security competition for high school students. En <em>Proceedings of the 2014 USENIX Summit on Gaming, Games, and Gamification in Security Education (3GSE 14)</em>. USENIX Association. https://www.usenix.org/conference/3gse14/summit-program/presentation/chapman</p>
+<p>Combe, T., Martin, A., &amp; Di Pietro, R. (2016). To Docker or not to Docker: A security perspective. <em>IEEE Cloud Computing, 3</em>(5), 54–62. https://doi.org/10.1109/MCC.2016.100</p>
+<p>Django Software Foundation. (2024a). <em>Django Channels documentation</em> (Versión 4). https://channels.readthedocs.io/</p>
+<p>Django Software Foundation. (2024b). <em>ASGI (Asynchronous Server Gateway Interface) specification</em> (Versión 3.0). https://asgi.readthedocs.io/</p>
+<p>Django Software Foundation. (2024c). <em>Django documentation</em> (Versión 5.0). https://docs.djangoproject.com/en/5.0/</p>
+<p>Docker Inc. (2024a). <em>Docker Engine API reference</em> (Versión 1.45). https://docs.docker.com/engine/api/</p>
+<p>Docker Inc. (2024b). <em>Docker Engine security</em>. https://docs.docker.com/engine/security/</p>
+<p>Fette, I., &amp; Melnikov, A. (2011). <em>The WebSocket Protocol</em> (RFC 6455). Internet Engineering Task Force. https://doi.org/10.17487/RFC6455</p>
+<p>Kerrisk, M. (2024a). <em>namespaces(7) — Linux manual page</em>. https://man7.org/linux/man-pages/man7/namespaces.7.html</p>
+<p>Kerrisk, M. (2024b). <em>cgroups(7) — Linux manual page</em>. https://man7.org/linux/man-pages/man7/cgroups.7.html</p>
+<p>Kerrisk, M. (2024c). <em>capabilities(7) — Linux manual page</em>. https://man7.org/linux/man-pages/man7/capabilities.7.html</p>
+<p>Merkel, D. (2014). Docker: Lightweight Linux containers for consistent development and deployment. <em>Linux Journal, 2014</em>(239), Artículo 2.</p>
+<p>MITRE Corporation. (2023). <em>Common Weakness Enumeration (CWE)</em> (Versión 4.13). https://cwe.mitre.org/</p>
+<p>OWASP Foundation. (2021). <em>OWASP Top 10:2021</em>. https://owasp.org/Top10/</p>
+<p>Pressman, R. S., &amp; Maxim, B. R. (2015). <em>Software engineering: A practitioner's approach</em> (8.ª ed.). McGraw-Hill Education.</p>
+<p>Ries, E. (2011). <em>The lean startup: How today's entrepreneurs use continuous innovation to create radically successful businesses</em>. Crown Business.</p>
+<p>Saltzer, J. H., &amp; Schroeder, M. D. (1975). The protection of information in computer systems. <em>Proceedings of the IEEE, 63</em>(9), 1278–1308. https://doi.org/10.1109/PROC.1975.9939</p>
+<p>Shostack, A. (2014). <em>Threat modeling: Designing for security</em>. Wiley.</p>
+<p>Sommerville, I. (2011). <em>Ingeniería de software</em> (9.ª ed.). Pearson Educación.</p>
+<p>Souppaya, M., Morello, J., &amp; Scarfone, K. (2017). <em>Application container security guide</em> (NIST Special Publication 800-190). National Institute of Standards and Technology. https://doi.org/10.6028/NIST.SP.800-190</p>
+<p>Sultan, S., Ahmad, I., &amp; Dimitriou, T. (2019). Container security: Issues, challenges, and the road ahead. <em>IEEE Access, 7</em>, 52976–52996. https://doi.org/10.1109/ACCESS.2019.2911732</p>
+<p>Vigna, G. (2003). Teaching hands-on network security: Testbeds and live exercises. <em>Journal of Information Warfare, 2</em>(3), 8–24.</p>
+<p>Xterm.js Contributors. (2024). <em>xterm.js: A terminal for the web</em>. https://xtermjs.org/</p>
+</div>
+
+</body>
+</html>

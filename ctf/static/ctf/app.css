@@ -577,6 +577,21 @@ body {
   gap: 8px;
 }
 
+#btn-tour {
+  flex-direction: row;
+  width: auto;
+  min-width: unset;
+  height: 32px;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: 11px;
+}
+
+#btn-tour .btn-help-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .countdown-badge {
   display: inline-flex;
   align-items: center;
@@ -751,14 +766,14 @@ body {
 
 .filter-indicator {
   position: absolute;
-  bottom: -6px;
+  top: 0;
   left: 0;
   height: 2px;
   width: 0;
   background: var(--green);
   border-radius: 999px;
   box-shadow: 0 0 8px rgba(62, 240, 165, 0.6);
-  transition: left 0.25s ease, width 0.25s ease;
+  transition: left 0.25s ease, width 0.25s ease, top 0.25s ease;
   pointer-events: none;
 }
 
@@ -2014,28 +2029,6 @@ body {
   flex: 1;
 }
 
-@media (max-width: 880px) {
-  .rail {
-    padding: 0 16px;
-    font-size: 9.5px;
-  }
-
-  .topbar,
-  .layout {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
-
-  .layout {
-    height: auto;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .terminal-panel {
-    height: 62vh;
-  }
-}
-
 /* --- Botón de ayuda "?" en el topbar --- */
 .btn-help {
   display: flex;
@@ -2209,4 +2202,740 @@ body {
 .tour-callout-actions .btn {
   padding: 5px 12px;
   font-size: 12px;
+}
+
+/* ==========================================================================
+   SISTEMA DE MEDIA QUERIES RESPONSIVE (TABLETS Y MÓVILES)
+   ========================================================================== */
+
+/* ---------- 1. Tablets / Pantallas medianas (max-width: 960px) ---------- */
+@media (max-width: 960px) {
+  .topbar {
+    margin: 28px 16px 0;
+  }
+
+  .layout {
+    margin: 0 16px;
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+}
+
+/* ---------- 2. Tablets en vertical / Layout apilado (max-width: 840px) ---------- */
+@media (max-width: 840px) {
+  .rail {
+    padding: 0 16px;
+    font-size: 9.5px;
+  }
+
+  .topbar {
+    margin: 24px 14px 0;
+  }
+
+  .layout {
+    margin: 0 14px;
+    padding: 12px 0 44px;
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .terminal-panel {
+    min-height: 480px;
+    height: auto;
+  }
+
+  #terminal.is-visible {
+    height: 52vh;
+    min-height: 320px;
+  }
+
+  .category-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 3. Teléfonos móviles (max-width: 680px) ---------- */
+@media (max-width: 680px) {
+  /* Marco exterior sutil */
+  .shell {
+    inset: 4px;
+    border-radius: 8px;
+    opacity: 0.35;
+  }
+
+  /* Rieles de estado */
+  .rail {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 8.5px;
+    letter-spacing: 0.04em;
+  }
+
+  .rail-top {
+    display: none;
+  }
+
+  .rail-bottom {
+    height: 28px;
+    padding: 0 10px;
+    background: rgba(7, 10, 9, 0.95);
+    backdrop-filter: blur(4px);
+  }
+
+  .rail-item {
+    font-size: 8.5px;
+    gap: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 48%;
+  }
+
+  /* Topbar */
+  .topbar {
+    height: auto;
+    min-height: 44px;
+    margin: 10px 8px 0;
+    padding: 6px 2px;
+    gap: 8px;
+  }
+
+  .topbar-brand {
+    gap: 6px;
+  }
+
+  .topbar-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .topbar-name {
+    font-size: 11.5px;
+  }
+
+  .topbar-right {
+    gap: 6px;
+  }
+
+  .topbar .btn-help {
+    width: auto;
+    min-width: unset;
+    height: 30px;
+    padding: 0 8px;
+    flex-direction: row;
+    gap: 4px;
+    font-size: 10.5px;
+    border-radius: var(--radius-sm);
+  }
+
+  .topbar .btn-help svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .user-chip {
+    max-width: 110px;
+    padding: 3px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-chip svg {
+    flex: none;
+  }
+
+  .topbar-right .btn-ghost {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  /* Layout */
+  .layout {
+    margin: 0 8px;
+    padding: 8px 0 44px;
+    gap: 10px;
+  }
+
+  /* Panel Head y acciones de terminal (solución a solapamiento) */
+  .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .panel-head .status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 10.5px;
+    min-width: 0;
+  }
+
+  .panel-head .status #status-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  #btn-tour {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 10px;
+    flex: 0 0 auto;
+  }
+
+  .countdown-badge {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 10.5px;
+    flex: 0 0 auto;
+  }
+
+  #btn-start {
+    flex: 1 1 130px;
+    min-width: 130px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 10.5px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  #btn-stop {
+    flex: 0 0 auto;
+    height: 34px;
+    padding: 0 12px;
+    font-size: 10.5px;
+    justify-content: center;
+  }
+
+  /* Terminal y catálogo */
+  .terminal-panel {
+    min-height: 400px;
+  }
+
+  .terminal-wrap {
+    min-height: 280px;
+    padding: 8px;
+  }
+
+  #terminal.is-visible {
+    height: 48vh;
+    min-height: 260px;
+  }
+
+  .terminal-empty {
+    padding: 14px 8px;
+  }
+
+  .catalog-head {
+    margin-bottom: 2px;
+  }
+
+  .catalog-title {
+    font-size: 13.5px;
+  }
+
+  .catalog-head .muted {
+    font-size: 10.5px;
+  }
+
+  .difficulty-filter {
+    gap: 4px;
+    margin-top: 2px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .difficulty-filter-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 0.03em;
+  }
+
+  .challenge-picker {
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  .category-group {
+    gap: 6px;
+  }
+
+  .category-head {
+    gap: 5px;
+    padding-bottom: 4px;
+    flex-wrap: wrap;
+  }
+
+  .category-name {
+    font-size: 11px;
+  }
+
+  .category-count {
+    font-size: 9.5px;
+  }
+
+  .category-cards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .challenge-card {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .challenge-card-name {
+    font-size: 11.5px;
+  }
+
+  .challenge-card-desc {
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .difficulty-tag,
+  .time-limit-tag,
+  .solved-tag {
+    font-size: 8.5px;
+    padding: 1px 5px;
+  }
+
+  .image-tag {
+    font-size: 9px;
+    margin-top: 4px;
+  }
+
+  .challenge-briefing {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  /* Guía del reto */
+  .guide-toggle {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .guide-body {
+    padding: 2px 10px 10px;
+    gap: 6px;
+  }
+
+  .briefing-row {
+    gap: 2px;
+  }
+
+  .briefing-label {
+    font-size: 9px;
+  }
+
+  .briefing-text {
+    font-size: 11px;
+  }
+
+  .briefing-code {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .briefing-code code {
+    width: 100%;
+    font-size: 10.5px;
+    padding: 5px 8px;
+  }
+
+  .btn-copy {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  /* Barra de Bandera */
+  .flag-bar {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .flag-bar-title {
+    font-size: 10px;
+  }
+
+  .flag-bar-status {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+
+  .flag-form {
+    gap: 6px;
+  }
+
+  .flag-input {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .btn-submit-flag {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 10.5px;
+    flex: none;
+  }
+
+  .flag-feedback {
+    font-size: 10.5px;
+    padding: 6px 8px;
+  }
+
+  /* Panel lateral */
+  .side-section {
+    padding: 10px 12px;
+  }
+
+  .side-title {
+    font-size: 9.5px;
+    margin-bottom: 8px;
+  }
+
+  .kv {
+    font-size: 11px;
+    padding: 3px 0;
+  }
+
+  .side-note {
+    font-size: 10.5px;
+  }
+
+  /* ---------- MODAL OCULTO (ADMIN / SETTINGS) ---------- */
+  .modal-backdrop {
+    padding: 10px 8px;
+    align-items: center;
+  }
+
+  .settings-card {
+    max-width: 100%;
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 16px 12px 14px;
+    border-radius: var(--radius);
+    margin: auto;
+  }
+
+  .settings-title {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .settings-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-tab {
+    padding: 6px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .settings-field {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .settings-field label {
+    font-size: 9.5px;
+  }
+
+  .settings-section-label {
+    font-size: 9.5px;
+    margin: 6px 0 8px;
+    padding-top: 8px;
+  }
+
+  .settings-field input {
+    padding: 8px 36px 8px 10px;
+    font-size: 12px;
+  }
+
+  .number-stepper-arrows {
+    width: 32px;
+  }
+
+  .number-stepper-btn {
+    font-size: 9px;
+  }
+
+  .instances-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .instances-note {
+    font-size: 9.5px;
+  }
+
+  .instances-table-wrap {
+    max-height: 250px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 6px;
+  }
+
+  .instances-table {
+    min-width: 480px;
+    font-size: 10px;
+  }
+
+  .instances-table th,
+  .instances-table td {
+    padding: 6px 6px;
+  }
+
+  .btn-instance-destroy {
+    padding: 4px 7px;
+    font-size: 9px;
+  }
+
+  .user-password-row {
+    gap: 6px;
+  }
+
+  .user-password-row input {
+    font-size: 11px;
+  }
+
+  .user-staff-check {
+    font-size: 10px;
+    margin: 4px 0 12px;
+    line-height: 1.4;
+  }
+
+  .users-table-wrap {
+    max-height: 200px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .users-table-wrap .instances-table {
+    min-width: 440px;
+  }
+
+  .user-acciones {
+    gap: 4px;
+  }
+
+  .btn-user-accion {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+
+  .modal-actions.settings-actions {
+    gap: 8px;
+    flex-direction: row;
+  }
+
+  .modal-actions.settings-actions .btn {
+    padding: 8px 10px;
+    font-size: 10.5px;
+  }
+
+  /* Modales adicionales */
+  .welcome-card {
+    max-width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 16px 12px;
+  }
+
+  .welcome-intro {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-steps {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-steps li {
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .welcome-step-n {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .welcome-tip {
+    font-size: 10.5px;
+    padding: 8px 10px;
+  }
+
+  .welcome-card .modal-actions .btn {
+    width: 100%;
+    padding: 9px;
+    font-size: 11px;
+  }
+
+  .modal-card {
+    padding: 20px 14px;
+  }
+
+  .modal-title {
+    font-size: 14px;
+  }
+
+  .modal-subtitle {
+    font-size: 11.5px;
+  }
+
+  .modal-desc {
+    font-size: 11px;
+    margin-bottom: 14px;
+  }
+
+  .modal-hint {
+    font-size: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modal-actions {
+    gap: 8px;
+  }
+
+  .modal-actions .btn {
+    min-width: unset;
+    padding: 8px 14px;
+    font-size: 10.5px;
+  }
+
+  .toast-fixed {
+    width: calc(100vw - 16px);
+    left: 8px;
+    bottom: 34px;
+    transform: none;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .toast-title {
+    font-size: 11px;
+  }
+
+  .toast-text {
+    font-size: 10px;
+  }
+
+  .tour-callout {
+    max-width: calc(100vw - 20px);
+    padding: 12px 14px;
+  }
+
+  .tour-callout-title {
+    font-size: 13px;
+  }
+
+  .tour-callout-text {
+    font-size: 11.5px;
+  }
+
+  /* Pantalla de login en mobile */
+  .auth-body {
+    padding: 16px 10px;
+  }
+
+  .auth-card {
+    padding: 20px 16px;
+    max-width: 100%;
+  }
+
+  .auth-title {
+    font-size: 16px;
+  }
+
+  .auth-sub {
+    font-size: 10.5px;
+  }
+
+  .field-label {
+    font-size: 10.5px;
+  }
+
+  .input-wrap input {
+    font-size: 11.5px;
+    padding: 9px 10px 9px 30px;
+  }
+
+  .btn-block {
+    font-size: 11px;
+    padding: 9px;
+  }
+
+  .note-box {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+}
+
+/* ---------- 4. Pantallas ultra compactas (max-width: 380px) ---------- */
+@media (max-width: 380px) {
+  .topbar-name {
+    font-size: 10.5px;
+  }
+
+  .user-chip {
+    max-width: 85px;
+    font-size: 9.5px;
+  }
+
+  .topbar-right {
+    gap: 4px;
+  }
+
+  #btn-start {
+    font-size: 10px;
+    padding: 0 6px;
+    min-width: 110px;
+  }
+
+  .difficulty-filter-btn {
+    padding: 3px 6px;
+    font-size: 8.5px;
+  }
+
+  .instances-table,
+  .users-table-wrap .instances-table {
+    min-width: 420px;
+  }
 }

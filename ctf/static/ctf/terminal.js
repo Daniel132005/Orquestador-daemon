@@ -516,6 +516,7 @@ function moverIndicadorFiltro(btn) {
   const rectBtn = btn.getBoundingClientRect();
   indicador.style.left = `${rectBtn.left - rectContenedor.left}px`;
   indicador.style.width = `${rectBtn.width}px`;
+  indicador.style.top = `${rectBtn.bottom - rectContenedor.top + 3}px`;
 }
 
 function aplicarFiltro(dificultad) {
