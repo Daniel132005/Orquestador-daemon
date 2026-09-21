@@ -1,0 +1,109 @@
+PRUEBA DE CARGA - PLATAFORMA CTF
+Fecha: 2026-09-20 19:24:30
+Estudiantes simulados: 20
+Reto desplegado por cada uno: injection-sqli
+PID de Daphne: 7936
+
+========================================================================
+[C-00] PREPARACION: cuentas de estudiante y estado inicial
+========================================================================
+  $ User.objects.create_user(...) x 20
+    Cuentas listas: 20 (nuevas: 0)
+    Hilos del servidor en reposo: 1
+    Sockets abiertos en reposo: 3
+    Contenedores CTF vivos: 0
+
+========================================================================
+[C-01] AUTENTICACION CONCURRENTE DE 20 ESTUDIANTES
+========================================================================
+  $ POST /login/ x 20 en paralelo
+    Sesiones iniciadas: 20 / 20
+    Tiempo total: 3.75 s
+
+========================================================================
+[C-02] DESPLIEGUE CONCURRENTE DE 20 INSTANCIAS
+========================================================================
+  $ POST /api/instance/start/ x 20 en paralelo
+    Instancias creadas: 20 / 20
+    Tiempo total de la oleada: 7.79 s
+    Latencia por instancia -> min 2.76 s | media 5.71 s | max 7.72 s
+    Filas en base de datos: 20
+    Contenedores reales en Docker: 20
+
+========================================================================
+[C-03] CONSOLAS WEBSOCKET SIMULTANEAS
+========================================================================
+  $ ws://127.0.0.1:8000/ws/terminal/ x 20 + 'echo CARGA-OK-nn'
+    Consolas que ejecutaron el comando: 20 / 20
+    Tiempo total: 20.11 s
+    Respuesta por consola -> min 1.31 s | media 1.63 s | max 1.88 s
+
+========================================================================
+[C-04] CONSUMO DE HILOS DEL SERVIDOR (metrica critica)
+========================================================================
+  $ cat /proc/7936/status | grep Threads
+    Hilos en reposo            : 1
+    Hilos con 20 consolas abiertas: 18
+    Crecimiento: +17 hilos para 20 consolas
+    Hilos por consola: 0.85
+  $ for t in /proc/7936/task/*; do cat $t/wchan; done | sort | uniq -c
+    
+    T1 - durante el arranque de las consolas (llamadas al daemon en vuelo):
+        17  futex_wait_queue
+         1  do_epoll_wait
+      bloqueados en E/S de socket: 0
+    
+    T2 - con las 20 consolas ya abiertas y en reposo:
+        17  futex_wait_queue
+         1  do_epoll_wait
+      bloqueados en E/S de socket: 0
+    
+    Hilos totales: reposo 1 -> arranque 18 -> consolas abiertas 18
+    Lectura: si cada consola consumiera un hilo propio, con 20 consolas
+    habria al menos 20 hilos bloqueados de forma permanente.
+    Sockets abiertos por el servidor: 63 (en reposo eran 23)
+
+========================================================================
+[C-05] RECURSOS DEL HOST BAJO CARGA
+========================================================================
+  $ docker stats --no-stream
+    great_solomon 0.00% 664KiB / 256MiB
+    sharp_nightingale 0.00% 672KiB / 256MiB
+    cranky_poincare 0.01% 664KiB / 256MiB
+    quizzical_wilson 0.01% 672KiB / 256MiB
+    goofy_leakey 0.01% 660KiB / 256MiB
+    ... (se muestran las primeras 5 de 20)
+    Memoria sumada de los 20 contenedores: ? MiB
+  $ free -m
+    total        used        free      shared  buff/cache   available
+    Mem:            7785        1358        3759           8        2867        6426
+
+========================================================================
+[C-06] LIBERACION DE RECURSOS
+========================================================================
+  $ POST /api/instance/stop/ x 20 en paralelo
+    Instancias detenidas: 20 / 20
+    Tiempo total: 12.40 s
+    Latencia por destruccion -> media 10.05 s | max 12.35 s
+    Filas en base de datos tras la limpieza: 0
+    Contenedores restantes: 0
+    Redes ctf-net-* restantes: 1
+    Hilos del servidor tras cerrar todo: 18 (en reposo eran 1)
+
+========================================================================
+RESUMEN DE LA PRUEBA DE CARGA
+========================================================================
+  Estudiantes simulados                      20
+  Sesiones iniciadas                         20 / 20
+  Instancias desplegadas                     20 / 20
+  Tiempo de la oleada de despliegue          7.79 s
+  Latencia media por instancia               5.71 s
+  Consolas simultaneas funcionales           20 / 20
+  Hilos del servidor en reposo               1
+  Hilos con todas las consolas abiertas      18
+  Hilos consumidos por consola               0.85
+  Hilos bloqueados en E/S                    0
+  Instancias liberadas                       20 / 20
+  Residuos tras la limpieza                  0 filas / 0 contenedores
+
+  VEREDICTO: OK

@@ -1,0 +1,104 @@
+PRUEBAS DE HUMO - PLATAFORMA CTF
+Fecha: 2026-09-20 19:11:15
+Docker Engine: real  |  Dobles de prueba: ninguno
+
+========================================================================
+[H-01] El cliente Docker propio crea una red aislada
+========================================================================
+  $ docker_client.create_network('ctf-net-humo-1789949475')
+    Id de red: acb1b1e9250c
+    Tiempo: 0.036 s
+    Inspeccion: Internal=true Driver=bridge
+  >> RESULTADO: OK - red sin salida a internet
+
+========================================================================
+[H-02] Crea el contenedor del reto con limites de recursos
+========================================================================
+  $ docker_client.create_container(image=ctf-reto-idor:latest, mem=256MB, cpus=0.5, pids=64)
+    Id de contenedor: 1166d8848825
+    Tiempo: 0.071 s
+  >> RESULTADO: OK
+
+========================================================================
+[H-03] Inyecta la bandera personalizada del estudiante
+========================================================================
+  $ docker_client.inject_challenge_flag(cont, 'idor', <flag del alumno 1>)
+    Bandera generada: FLAG{idor_12f669e21f3b8de1}
+  >> RESULTADO: OK
+
+========================================================================
+[H-04] Arranca el contenedor
+========================================================================
+  $ docker_client.start_container(cont)
+    Tiempo: 0.282 s
+    Estado del contenedor: running
+  >> RESULTADO: OK
+
+========================================================================
+[H-05] Los limites llegaron al kernel (vistos desde dentro)
+========================================================================
+  $ docker exec <cont> cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/pids.max
+    memory.max = 268435456  (esperado 268435456)
+    pids.max   = 64  (esperado 64)
+    cpu.max    = 50000 100000  (esperado 50000 100000 = 0.5 CPU)
+  >> RESULTADO: OK - cgroups aplicados por el kernel
+
+========================================================================
+[H-06] La bandera NO es legible por el usuario sin privilegios
+========================================================================
+  $ docker exec -u retador <cont> cat /app/pedidos.json
+    cat: can't open '/app/pedidos.json': Permission denied
+    Codigo de salida: 1
+  >> RESULTADO: OK - hay que explotar la falla para obtenerla
+
+========================================================================
+[H-07] La bandera SI es accesible explotando el reto (via sudo)
+========================================================================
+  $ docker exec -u retador <cont> sudo /usr/bin/python3 /app/pedidos.py 1337
+    {
+      "cliente": "admin",
+      "producto": "Acceso VIP",
+      "flag": "FLAG{idor_12f669e21f3b8de1}"
+    }
+  >> RESULTADO: OK - el reto es resoluble
+
+========================================================================
+[H-08] La consola interactiva puede abrirse (exec del TTY)
+========================================================================
+  $ docker_client.create_exec(cont, ['/bin/sh'])
+    Id del exec: 8615f970ba47
+  >> RESULTADO: OK
+
+========================================================================
+[H-09] El contenedor aparece en el inventario de la plataforma
+========================================================================
+  $ docker_client.list_ctf_containers()
+    Contenedores CTF vivos: 1
+    Ids: 1166d8848825
+    Imagen: ctf-reto-idor:latest | Estado: running | Red: ctf-net-humo-1789949475
+  >> RESULTADO: OK - el panel puede detectar huerfanos
+
+========================================================================
+[H-10] Destruccion completa: contenedor y red
+========================================================================
+  $ docker_client.destroy_instance(cont, red)
+    Tiempo: 5.542 s
+    Contenedor restante: ninguno
+    Red restante: ninguna
+  >> RESULTADO: OK - sin residuos en el host
+
+========================================================================
+RESUMEN DE PRUEBAS DE HUMO
+========================================================================
+  H-01     OK
+  H-02     OK
+  H-03     OK
+  H-04     OK
+  H-05     OK
+  H-06     OK
+  H-07     OK
+  H-08     OK
+  H-09     OK
+  H-10     OK
+
+  Total: 10  |  Exitosas: 10  |  Fallidas: 0

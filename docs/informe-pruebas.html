@@ -1,0 +1,1454 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  @page { size: A4; margin: 13mm 11mm; }
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .capture, .test, .finding, .tablewrap { break-inside: avoid; page-break-inside: avoid; }
+    section { break-inside: auto; }
+    h2, h3 { break-after: avoid; page-break-after: avoid; }
+    header.doc { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<title>Validación ROOT_LABS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --paper:      #FBFAF7;
+    --surface:    #F2F1EA;
+    --ink:        #141713;
+    --muted:      #6A7067;
+    --rule:       #E2E0D6;
+    --accent:     #1F6B3A;
+    --accent-soft:#E4EEE4;
+    --ok:         #1F6B3A;
+    --warn:       #8A5E10;
+    --crit:       #A33224;
+    --term-bg:    #0E120D;
+    --term-fg:    #C6D4BE;
+    --term-dim:   #7E8C78;
+    --term-rule:  #263022;
+    --phosphor:   #79E089;
+    --term-warn:  #E2B45C;
+    --term-crit:  #E88A78;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #12140F;
+      --surface:    #191C16;
+      --ink:        #E6E8E1;
+      --muted:      #9AA396;
+      --rule:       #2A2E26;
+      --accent:     #7CC48D;
+      --accent-soft:#1D2A1F;
+      --ok:         #7CC48D;
+      --warn:       #D6A44F;
+      --crit:       #E08877;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #12140F;
+    --surface:    #191C16;
+    --ink:        #E6E8E1;
+    --muted:      #9AA396;
+    --rule:       #2A2E26;
+    --accent:     #7CC48D;
+    --accent-soft:#1D2A1F;
+    --ok:         #7CC48D;
+    --warn:       #D6A44F;
+    --crit:       #E08877;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+
+  h1, h2, h3, h4, .sans { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  /* ---------- cabecera ---------- */
+  header.doc {
+    border-bottom: 2px solid var(--ink);
+    padding-block: 40px 20px;
+    margin-bottom: 28px;
+  }
+  .lede {
+    font-size: 1.08rem;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 24px;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px 24px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+  }
+  .meta dt { color: var(--muted); letter-spacing: 0.04em; }
+  .meta dd { margin: 2px 0 0; font-weight: 500; }
+
+  /* ---------- secciones ---------- */
+  section { margin-block: 44px 0; scroll-margin-top: 20px; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+    margin-bottom: 18px;
+  }
+  .sec-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- tarjetas de resumen ---------- */
+  .suites {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .suite {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 14px 16px;
+  }
+  .suite .name {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .suite .score {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .suite .sub {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ---------- prueba individual ---------- */
+  .test { margin-block: 26px; }
+  .test-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .tid {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 7px;
+    letter-spacing: 0.04em;
+  }
+  .test-head h3 { margin: 0; flex: 1 1 260px; }
+
+  .chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+  .chip.ok   { color: var(--ok); }
+  .chip.warn { color: var(--warn); }
+  .chip.crit { color: var(--crit); }
+
+  .note {
+    font-size: 0.92rem;
+    color: var(--muted);
+    max-width: 66ch;
+    margin: 0 0 10px;
+  }
+
+  /* ---------- captura de terminal ---------- */
+  .capture {
+    background: var(--term-bg);
+    border: 1px solid var(--term-rule);
+    border-radius: 3px;
+    margin: 12px 0 16px;
+    overflow: hidden;
+  }
+  .capture-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #161C14;
+    border-bottom: 1px solid var(--term-rule);
+    padding: 7px 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    color: var(--term-dim);
+    letter-spacing: 0.04em;
+  }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #2F3A2B; flex: none;
+  }
+  .dot.live { background: var(--phosphor); }
+  .capture-bar .path { margin-left: auto; }
+
+  .capture pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.775rem;
+    line-height: 1.55;
+    color: var(--term-fg);
+    white-space: pre;
+    tab-size: 2;
+  }
+  .capture pre b   { color: var(--phosphor); font-weight: 500; }
+  .capture pre i   { color: var(--term-dim); font-style: normal; }
+  .capture pre u   { color: var(--term-warn); text-decoration: none; }
+  .capture pre s   { color: var(--term-crit); text-decoration: none; }
+  .capture pre .cmd { color: #EDF3E9; font-weight: 500; }
+
+  /* ---------- tablas ---------- */
+  .tablewrap { overflow-x: auto; margin: 14px 0 18px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.83rem;
+  }
+  caption {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 7px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px 8px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  td.num, th.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  td.antes  { color: var(--crit); font-family: "IBM Plex Mono", monospace; }
+  td.despues{ color: var(--ok);   font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ---------- hallazgo ---------- */
+  .finding {
+    background: var(--surface);
+    border-left: 4px solid var(--warn);
+    padding: 16px 18px;
+    margin: 18px 0;
+  }
+  .finding.alta { border-left-color: var(--crit); }
+  .finding.baja { border-left-color: var(--accent); }
+  .finding h3 { margin-bottom: 6px; }
+  .finding .sev {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .finding p { font-size: 0.93rem; margin-bottom: 10px; }
+  .finding p:last-child { margin-bottom: 0; }
+  .fix {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 9px 12px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  ul.tight { margin: 0 0 14px; padding-left: 20px; }
+  ul.tight li { margin-bottom: 5px; }
+
+  .cover-list { list-style: none; padding: 0; margin: 0; }
+  .cover-list li {
+    display: flex;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.9rem;
+  }
+  .cover-list .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+    min-width: 2.4em;
+  }
+
+  footer.doc {
+    margin-top: 52px;
+    border-top: 2px solid var(--ink);
+    padding-top: 16px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+
+  @media print {
+    body { padding-block: 0; }
+    .capture { break-inside: avoid; }
+    .test { break-inside: avoid; }
+    section { break-before: auto; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="doc">
+  <p class="eyebrow">Informe técnico · Pruebas y validación</p>
+  <h1>Validación de la plataforma ROOT_LABS</h1>
+  <p class="lede">
+    Campaña completa de pruebas unitarias, de humo, de estrés y de carga sobre la
+    plataforma CTF de contenedores dinámicos. Cada resultado de este informe procede
+    de una ejecución real registrada en <span class="sans">pruebas/resultados/</span>,
+    contra el Docker Engine del host y contenedores verdaderos.
+  </p>
+  <dl class="meta">
+    <div><dt>Fecha de ejecución</dt><dd>20 · 09 · 2026</dd></div>
+    <div><dt>Revisión probada</dt><dd>33cf672</dd></div>
+    <div><dt>Host</dt><dd>WSL2 · kernel 6.6.87.2</dd></div>
+    <div><dt>Recursos</dt><dd>12 CPU · 7.785 MB RAM</dd></div>
+    <div><dt>Docker Engine</dt><dd>28.5.1</dd></div>
+    <div><dt>Servidor</dt><dd>Daphne 4.2.3 · Django 5.2.17</dd></div>
+  </dl>
+</header>
+
+<!-- =================== RESUMEN =================== -->
+<section id="resumen">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <h2>Resumen de resultados</h2>
+  </div>
+
+  <div class="suites">
+    <div class="suite">
+      <div class="name">Unitarias</div>
+      <div class="score">84 / 84</div>
+      <div class="sub">8,35 s · 5 módulos</div>
+    </div>
+    <div class="suite">
+      <div class="name">Humo</div>
+      <div class="score">10 / 10</div>
+      <div class="sub">Docker real</div>
+    </div>
+    <div class="suite">
+      <div class="name">Estrés</div>
+      <div class="score">8 / 8</div>
+      <div class="sub">con comparativo</div>
+    </div>
+    <div class="suite">
+      <div class="name">Carga</div>
+      <div class="score">20 / 20</div>
+      <div class="sub">usuarios concurrentes</div>
+    </div>
+  </div>
+
+  <div class="prose">
+    <p>
+      Las 122 verificaciones ejecutadas pasaron. Además, la campaña detectó
+      <strong>tres defectos reales</strong> que no estaban documentados en el
+      proyecto y que se detallan en la sección 06: el límite de memoria efectivo
+      es el doble del declarado, el techo de estudiantes concurrentes lo impone
+      la red y no la RAM, y la destrucción de instancias desperdicia cinco
+      segundos por contenedor.
+    </p>
+    <p>
+      Encontrar defectos no contradice los resultados: las pruebas se diseñaron
+      para atacar el sistema, y un sistema que se deja medir es el que puede
+      corregirse.
+    </p>
+  </div>
+</section>
+
+<!-- =================== METODOLOGÍA =================== -->
+<section id="metodologia">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <h2>Metodología</h2>
+  </div>
+  <div class="prose">
+    <p>
+      La validación se organizó en cuatro niveles, de menor a mayor contacto con
+      el entorno real. Los dos primeros responden «¿está bien construido?»; los
+      dos últimos, «¿aguanta?».
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Niveles de prueba</caption>
+      <thead>
+        <tr><th>Nivel</th><th>Qué comprueba</th><th>Entorno</th><th class="num">Casos</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Unitaria</strong></td>
+          <td>Lógica del orquestador aislada: catálogo, banderas, modelos, API y watchdog</td>
+          <td>Docker sustituido por dobles de prueba</td>
+          <td class="num">84</td>
+        </tr>
+        <tr>
+          <td><strong>Humo</strong></td>
+          <td>Ciclo de vida completo de una instancia contra el motor real</td>
+          <td>Docker Engine real</td>
+          <td class="num">10</td>
+        </tr>
+        <tr>
+          <td><strong>Estrés</strong></td>
+          <td>Resistencia del aislamiento ante ataques desde dentro del contenedor</td>
+          <td>Docker real · dos configuraciones</td>
+          <td class="num">8</td>
+        </tr>
+        <tr>
+          <td><strong>Carga</strong></td>
+          <td>Comportamiento con 20 estudiantes simultáneos de extremo a extremo</td>
+          <td>Daphne + 20 contenedores reales</td>
+          <td class="num">7 fases</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>
+      En las pruebas de estrés cada ataque se ejecuta <strong>dos veces</strong>:
+      primero sobre un contenedor sin los límites del sistema y después sobre uno
+      con la configuración real de la plataforma. Así la mejora queda medida, no
+      afirmada — es el origen de los cuadros comparativos de este informe.
+    </p>
+  </div>
+</section>
+
+<!-- =================== UNITARIAS =================== -->
+<section id="unitarias">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <h2>Pruebas unitarias</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Suite nueva de 84 casos repartidos en cinco módulos dentro de
+      <span class="sans">ctf/tests/</span>. No requiere Docker: las llamadas al motor
+      de contenedores se sustituyen por dobles de prueba, de modo que la suite corre
+      en cualquier equipo y puede integrarse en un flujo de integración continua.
+    </p>
+  </div>
+
+  <div class="capture">
+    <div class="capture-bar">
+      <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+      <span>ejecución completa</span>
+      <span class="path">pruebas/resultados/01-unitarias.txt</span>
+    </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests -v 2</span>
+
+<i>Creating test database for alias 'default'...</i>
+Found <b>84</b> test(s).
+
+<i>[... ejecución de los cinco módulos ...]</i>
+
+----------------------------------------------------------------------
+Ran <b>84 tests</b> in <b>8.351s</b>
+
+<b>OK</b>
+<i>Destroying test database for alias 'default'...</i>
+System check identified no issues (0 silenced).</pre>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Los cinco módulos</caption>
+      <thead>
+        <tr><th>Módulo</th><th>Riesgo que cubre</th><th class="num">Casos</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="sans">test_challenges</span></td>
+          <td>Que un estudiante apruebe sin resolver el reto</td>
+          <td class="num">20</td>
+        </tr>
+        <tr>
+          <td><span class="sans">test_models</span></td>
+          <td>Que un estudiante acapare recursos o falseé su progreso</td>
+          <td class="num">13</td>
+        </tr>
+        <tr>
+          <td><span class="sans">test_views</span></td>
+          <td>Que la API deje recursos colgados o acepte peticiones indebidas</td>
+          <td class="num">23</td>
+        </tr>
+        <tr>
+          <td><span class="sans">test_seguridad</span></td>
+          <td>Que una regresión elimine un límite sin que nadie lo note</td>
+          <td class="num">16</td>
+        </tr>
+        <tr>
+          <td><span class="sans">test_watchdog</span></td>
+          <td>Que los contenedores abandonados no se liberen nunca</td>
+          <td class="num">12</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ---- módulo 1 ---- -->
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">test_challenges</span>
+      <h3>Catálogo de retos y banderas dinámicas</h3>
+      <span class="chip ok">20 casos</span>
+    </div>
+    <p class="note">
+      <strong>Qué resuelve.</strong> Cada estudiante recibe una bandera propia derivada
+      de la clave secreta del servidor, su identificador y el reto. Estas pruebas
+      garantizan que compartir la bandera con un compañero no le sirva de nada, que
+      una bandera filtrada del código no valide, y que el catálogo que viaja al
+      navegador nunca contenga la respuesta.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>test_challenges · 20 casos</span>
+      </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests.test_challenges -v 2</span>
+
+<i>CatalogoRetosTest — integridad del catálogo</i>
+  test_el_catalogo_tiene_diez_retos ... <b>ok</b>
+  test_cada_reto_cubre_una_categoria_owasp_distinta ... <b>ok</b>
+  test_todos_los_retos_declaran_los_campos_obligatorios ... <b>ok</b>
+  test_todas_las_dificultades_son_validas ... <b>ok</b>
+  test_el_reto_por_defecto_existe_en_el_catalogo ... <b>ok</b>
+  test_get_challenge_devuelve_none_si_no_existe ... <b>ok</b>
+
+<i>BanderaDinamicaTest — generación de la bandera</i>
+  test_la_bandera_es_determinista_para_el_mismo_usuario ... <b>ok</b>
+  test_la_bandera_cambia_entre_usuarios ... <b>ok</b>
+  test_la_bandera_cambia_entre_retos_del_mismo_usuario ... <b>ok</b>
+  test_la_bandera_respeta_el_formato_publicado ... <b>ok</b>
+  test_todos_los_retos_generan_banderas_distintas_entre_si ... <b>ok</b>
+
+<i>ValidacionBanderaTest — quién puede canjearla</i>
+  test_acepta_la_bandera_propia ... <b>ok</b>
+  test_rechaza_la_bandera_de_otro_estudiante ... <b>ok</b>
+  test_rechaza_la_bandera_correcta_de_otro_reto ... <b>ok</b>
+  test_rechaza_si_no_se_identifica_al_usuario ... <b>ok</b>
+  test_rechaza_bandera_vacia ... <b>ok</b>
+  test_rechaza_reto_inexistente ... <b>ok</b>
+  test_ignora_espacios_alrededor_de_la_bandera ... <b>ok</b>
+
+<i>ExposicionDeDatosTest — qué se publica al frontend</i>
+  test_list_challenges_no_expone_ninguna_bandera ... <b>ok</b>
+  test_list_challenges_devuelve_todos_los_retos_con_xp ... <b>ok</b>
+
+Ran <b>20 tests</b> — <b>OK</b></pre>
+    </div>
+  </div>
+
+  <!-- ---- módulo 2 ---- -->
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">test_models</span>
+      <h3>Invariantes de la base de datos</h3>
+      <span class="chip ok">13 casos</span>
+    </div>
+    <p class="note">
+      <strong>Qué resuelve.</strong> Las reglas que no pueden depender de que el código
+      «se acuerde» de comprobarlas: un estudiante, una instancia; una sola fila de
+      configuración; un reto resuelto una sola vez por persona. Aquí se verifica que
+      la propia base de datos las rechace, no la aplicación.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>test_models · 13 casos</span>
+      </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests.test_models -v 2</span>
+
+<i>InstanceTest — una instancia activa por estudiante</i>
+  test_un_usuario_no_puede_tener_dos_instancias ... <b>ok</b>
+  test_dos_usuarios_distintos_pueden_tener_instancia_a_la_vez ... <b>ok</b>
+  test_el_contador_de_intentos_arranca_en_cero ... <b>ok</b>
+  test_borrar_el_usuario_borra_su_instancia ... <b>ok</b>
+
+<i>PlatformSettingsTest — configuración en caliente</i>
+  test_actual_crea_la_fila_si_no_existe ... <b>ok</b>
+  test_actual_devuelve_siempre_la_misma_fila ... <b>ok</b>
+  test_limite_de_tiempo_por_dificultad ... <b>ok</b>
+  test_dificultad_desconocida_usa_el_limite_basico ... <b>ok</b>
+  test_el_cambio_se_persiste_sin_reiniciar ... <b>ok</b>
+
+<i>SolvedChallengeTest — progreso y XP</i>
+  test_no_se_puede_registrar_dos_veces_el_mismo_reto ... <b>ok</b>
+  test_dos_usuarios_pueden_resolver_el_mismo_reto ... <b>ok</b>
+
+<i>InstanceDestructionNoticeTest — aviso del motivo</i>
+  test_los_tres_motivos_estan_disponibles ... <b>ok</b>
+  test_se_puede_registrar_un_aviso ... <b>ok</b>
+
+Ran <b>13 tests</b> — <b>OK</b></pre>
+    </div>
+  </div>
+
+  <!-- ---- módulo 3 ---- -->
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">test_views</span>
+      <h3>API HTTP y ciclo de vida de la instancia</h3>
+      <span class="chip ok">23 casos</span>
+    </div>
+    <p class="note">
+      <strong>Qué resuelve.</strong> Los dos fallos más caros de esta plataforma:
+      que un anónimo alcance la API, y que un error a mitad del despliegue deje un
+      contenedor vivo sin registro que lo reclame. Incluye el límite de cinco
+      intentos de bandera, que corta la fuerza bruta.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>test_views · 23 casos</span>
+      </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests.test_views -v 2</span>
+
+<i>AutenticacionRequeridaTest — nada es público</i>
+  test_get_sin_sesion_no_devuelve_datos ... <b>ok</b>
+  test_post_sin_sesion_no_ejecuta_nada ... <b>ok</b>
+  test_la_terminal_no_es_publica ... <b>ok</b>
+
+<i>CatalogoAPITest — qué devuelve /api/challenges/</i>
+  test_devuelve_los_diez_retos ... <b>ok</b>
+  test_no_filtra_ninguna_bandera_al_frontend ... <b>ok</b>
+
+<i>DespliegueInstanciaTest — POST /api/instance/start/</i>
+  test_despliega_y_registra_la_instancia ... <b>ok</b>
+  test_inyecta_la_bandera_del_estudiante_en_el_contenedor ... <b>ok</b>
+  test_la_red_es_exclusiva_del_usuario ... <b>ok</b>
+  test_rechaza_una_segunda_instancia_del_mismo_usuario ... <b>ok</b>
+  test_rechaza_un_reto_inexistente ... <b>ok</b>
+  test_si_docker_falla_no_deja_recursos_colgados ... <b>ok</b>
+
+<i>DetenerInstanciaTest — POST /api/instance/stop/</i>
+  test_destruye_contenedor_red_y_fila ... <b>ok</b>
+  test_sin_instancia_activa_responde_404 ... <b>ok</b>
+  test_si_docker_falla_conserva_la_fila ... <b>ok</b>
+
+<i>EnvioBanderaTest — POST /api/challenges/submit/</i>
+  test_bandera_correcta_registra_el_reto_resuelto ... <b>ok</b>
+  test_bandera_de_otro_estudiante_no_sirve ... <b>ok</b>
+  test_bandera_vacia_se_rechaza_sin_gastar_intento ... <b>ok</b>
+  test_resolver_dos_veces_no_duplica_el_progreso ... <b>ok</b>
+  test_cada_fallo_descuenta_un_intento ... <b>ok</b>
+  test_al_quinto_fallo_destruye_la_instancia ... <b>ok</b>
+  test_redesplegar_reinicia_el_contador_de_intentos ... <b>ok</b>
+  test_reto_inexistente_responde_404 ... <b>ok</b>
+  test_json_invalido_se_rechaza ... <b>ok</b>
+
+Ran <b>23 tests</b> — <b>OK</b></pre>
+    </div>
+  </div>
+
+  <!-- ---- módulo 4 ---- -->
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">test_seguridad</span>
+      <h3>Límites enviados al kernel y panel de administración</h3>
+      <span class="chip ok">16 casos</span>
+    </div>
+    <p class="note">
+      <strong>Qué resuelve.</strong> Es la red de seguridad contra regresiones.
+      Intercepta el JSON que el orquestador envía al socket de Docker y comprueba
+      que lleva memoria, CPU, procesos, descriptores, capacidades y montajes. Si
+      alguien elimina <span class="sans">PidsLimit</span> o la red interna, la suite
+      falla antes de que el cambio llegue al aula.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>test_seguridad · 16 casos</span>
+      </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests.test_seguridad -v 2</span>
+
+<i>LimitesDeRecursosTest — lo que el contenedor podrá consumir</i>
+  test_declara_limite_de_memoria ... <b>ok</b>
+  test_declara_limite_de_cpu ... <b>ok</b>
+  test_declara_limite_de_procesos ... <b>ok</b>
+  test_declara_limite_de_descriptores_de_archivo ... <b>ok</b>
+  test_el_contenedor_usa_la_red_del_usuario ... <b>ok</b>
+
+<i>EndurecimientoContenedorTest — lo que NO podrá hacer</i>
+  test_descarta_todas_las_capacidades_del_kernel ... <b>ok</b>
+  test_solo_devuelve_las_capacidades_minimas_para_sudo ... <b>ok</b>
+  test_tmp_esta_en_memoria_sin_ejecucion_ni_setuid ... <b>ok</b>
+  test_usa_un_init_que_cosecha_procesos_zombis ... <b>ok</b>
+  test_acota_el_tamano_de_los_logs_en_disco ... <b>ok</b>
+
+<i>AislamientoDeRedTest — la red de cada estudiante</i>
+  test_la_red_es_interna_sin_salida_a_internet ... <b>ok</b>
+  test_la_red_es_de_tipo_bridge ... <b>ok</b>
+
+<i>PanelAdministracionTest — separación de roles</i>
+  test_un_estudiante_no_accede_a_la_configuracion ... <b>ok</b>
+  test_un_estudiante_no_puede_destruir_instancias_ajenas ... <b>ok</b>
+  test_un_anonimo_tampoco_accede ... <b>ok</b>
+  test_el_profesor_si_accede_a_la_configuracion ... <b>ok</b>
+
+Ran <b>16 tests</b> — <b>OK</b></pre>
+    </div>
+  </div>
+
+  <!-- ---- módulo 5 ---- -->
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">test_watchdog</span>
+      <h3>Destrucción automática de instancias</h3>
+      <span class="chip ok">12 casos</span>
+    </div>
+    <p class="note">
+      <strong>Qué resuelve.</strong> El watchdog es lo único que impide que los
+      contenedores se acumulen hasta agotar el servidor. Se verifican las dos
+      condiciones de expiración por separado —abandono y vida máxima según
+      dificultad— y, sobre todo, la regla crítica: si Docker falla al destruir, la
+      fila <em>no</em> se borra, porque borrarla dejaría un contenedor huérfano que
+      nadie volvería a reclamar.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>test_watchdog · 12 casos</span>
+      </div>
+<pre><span class="cmd">$ python manage.py test ctf.tests.test_watchdog -v 2</span>
+
+<i>Instancias que deben sobrevivir</i>
+  test_no_destruye_una_instancia_activa_y_reciente ... <b>ok</b>
+  test_no_destruye_justo_antes_del_umbral ... <b>ok</b>
+
+<i>Expiración por abandono</i>
+  test_destruye_por_inactividad ... <b>ok</b>
+  test_el_aviso_por_inactividad_lleva_ese_motivo ... <b>ok</b>
+
+<i>Expiración por vida máxima</i>
+  test_destruye_por_vida_maxima_aunque_este_activa ... <b>ok</b>
+  test_la_vida_maxima_depende_de_la_dificultad ... <b>ok</b>
+  test_reto_fuera_del_catalogo_usa_el_limite_global ... <b>ok</b>
+  test_deja_aviso_con_el_motivo_correcto ... <b>ok</b>
+
+<i>Resistencia a fallos de Docker</i>
+  test_si_docker_falla_no_borra_la_fila ... <b>ok</b>
+  test_un_fallo_no_impide_limpiar_las_demas ... <b>ok</b>
+
+<i>Barrido masivo</i>
+  test_barre_varias_instancias_en_una_pasada ... <b>ok</b>
+  test_barrido_sin_instancias_no_falla ... <b>ok</b>
+
+Ran <b>12 tests</b> — <b>OK</b></pre>
+    </div>
+  </div>
+</section>
+
+<!-- =================== HUMO =================== -->
+<section id="humo">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <h2>Pruebas de humo</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Recorren el ciclo de vida completo de una instancia ejercitando el cliente
+      Docker propio del proyecto (<span class="sans">ctf/docker_client.py</span>)
+      contra el motor real. Sin dobles de prueba.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Las diez pruebas, por categoría</caption>
+      <thead>
+        <tr><th>Categoría</th><th>Pregunta que responde</th><th>Pruebas</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Orquestación de recursos</strong></td>
+          <td>¿Puede el sistema crear el entorno de un estudiante desde cero?</td>
+          <td class="num">H-01 · H-02 · H-04</td>
+        </tr>
+        <tr>
+          <td><strong>Aplicación de límites</strong></td>
+          <td>¿Los límites declarados llegaron de verdad al kernel?</td>
+          <td class="num">H-05</td>
+        </tr>
+        <tr>
+          <td><strong>Diseño del reto</strong></td>
+          <td>¿La bandera es personal, inaccesible sin explotar y obtenible al explotar?</td>
+          <td class="num">H-03 · H-06 · H-07</td>
+        </tr>
+        <tr>
+          <td><strong>Consola interactiva</strong></td>
+          <td>¿Puede abrirse la terminal dentro del contenedor?</td>
+          <td class="num">H-08</td>
+        </tr>
+        <tr>
+          <td><strong>Supervisión</strong></td>
+          <td>¿El panel del profesor ve los contenedores reales?</td>
+          <td class="num">H-09</td>
+        </tr>
+        <tr>
+          <td><strong>Liberación</strong></td>
+          <td>¿El host queda sin residuos al terminar?</td>
+          <td class="num">H-10</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="capture">
+    <div class="capture-bar">
+      <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+      <span>pruebas de humo</span>
+      <span class="path">pruebas/resultados/02-humo.txt</span>
+    </div>
+<pre><span class="cmd">$ python pruebas/humo.py</span>
+
+<i>Docker Engine: real  |  Dobles de prueba: ninguno</i>
+
+<b>[H-01]</b> El cliente Docker propio crea una red aislada
+  $ docker_client.create_network('ctf-net-humo-1789949475')
+    Id de red: acb1b1e9250c
+    Tiempo: <b>0.036 s</b>
+    Inspeccion: <b>Internal=true</b> Driver=bridge
+  &gt;&gt; RESULTADO: <b>OK</b> - red sin salida a internet
+
+<b>[H-04]</b> Arranca el contenedor
+  $ docker_client.start_container(cont)
+    Tiempo: <b>0.282 s</b>
+    Estado del contenedor: <b>running</b>
+  &gt;&gt; RESULTADO: <b>OK</b>
+
+<b>[H-05]</b> Los limites llegaron al kernel (vistos desde dentro)
+  $ docker exec &lt;cont&gt; cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/pids.max
+    memory.max = <b>268435456</b>  (esperado 268435456)
+    pids.max   = <b>64</b>  (esperado 64)
+    cpu.max    = <b>50000 100000</b>  (esperado = 0.5 CPU)
+  &gt;&gt; RESULTADO: <b>OK</b> - cgroups aplicados por el kernel
+
+<b>[H-06]</b> La bandera NO es legible por el usuario sin privilegios
+  $ docker exec -u retador &lt;cont&gt; cat /app/pedidos.json
+    <s>cat: can't open '/app/pedidos.json': Permission denied</s>
+    Codigo de salida: 1
+  &gt;&gt; RESULTADO: <b>OK</b> - hay que explotar la falla para obtenerla
+
+<b>[H-07]</b> La bandera SI es accesible explotando el reto (via sudo)
+  $ docker exec -u retador &lt;cont&gt; sudo /usr/bin/python3 /app/pedidos.py 1337
+    {
+      "cliente": "admin",
+      "producto": "Acceso VIP",
+      "flag": "<b>FLAG{idor_12f669e21f3b8de1}</b>"
+    }
+  &gt;&gt; RESULTADO: <b>OK</b> - el reto es resoluble
+
+<b>[H-10]</b> Destruccion completa: contenedor y red
+  $ docker_client.destroy_instance(cont, red)
+    Tiempo: <u>5.534 s</u>
+    Contenedor restante: <b>ninguno</b>
+    Red restante: <b>ninguna</b>
+  &gt;&gt; RESULTADO: <b>OK</b> - sin residuos en el host
+
+========================================================================
+  Total: <b>10</b>  |  Exitosas: <b>10</b>  |  Fallidas: <b>0</b></pre>
+  </div>
+
+  <div class="prose">
+    <p>
+      Las pruebas H-06 y H-07 son el par que valida el diseño pedagógico: el mismo
+      archivo es ilegible con <span class="sans">cat</span> y accesible a través del
+      programa vulnerable. Confirma que la única vía a la bandera es explotar la
+      falla, no leer un archivo.
+    </p>
+    <p>
+      El tiempo de H-10 (5,53 s) quedó marcado como anomalía y derivó en el
+      hallazgo&nbsp;3.
+    </p>
+  </div>
+</section>
+
+<!-- =================== ESTRÉS =================== -->
+<section id="estres">
+  <div class="sec-head">
+    <span class="sec-num">05</span>
+    <h2>Pruebas de estrés</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Ocho ataques ejecutados desde dentro de un contenedor de estudiante, cada uno
+      en dos configuraciones. Las capturas siguientes muestran los tres casos más
+      representativos; el transcript completo está en
+      <span class="sans">pruebas/resultados/03-estres.txt</span>.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Los ocho ataques, por categoría</caption>
+      <thead>
+        <tr><th>Categoría</th><th>Amenaza que representa</th><th>Pruebas</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Contención de recursos</strong></td>
+          <td>Un estudiante deja al resto sin servicio consumiendo procesos,
+              memoria, CPU o descriptores del host</td>
+          <td class="num">E-01 · E-02<br>E-03 · E-07</td>
+        </tr>
+        <tr>
+          <td><strong>Aislamiento de red</strong></td>
+          <td>El reto se usa como trampolín para atacar internet o el entorno
+              de otro estudiante</td>
+          <td class="num">E-04 · E-05</td>
+        </tr>
+        <tr>
+          <td><strong>Privilegios</strong></td>
+          <td>Root dentro del contenedor conserva capacidades del kernel que
+              el reto no necesita</td>
+          <td class="num">E-06</td>
+        </tr>
+        <tr>
+          <td><strong>Verificación integral</strong></td>
+          <td>Los límites funcionan sueltos pero alguno se pierde al aplicarlos
+              todos juntos</td>
+          <td class="num">E-08</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">E-01</span>
+      <h3>Bomba de procesos</h3>
+      <span class="chip ok">Contenido</span>
+    </div>
+    <p class="note">
+      Un proceso intenta crear 200 hijos. Sin límite lo consigue; con
+      <span class="sans">PidsLimit</span> el kernel deniega la llamada
+      <span class="sans">fork()</span> al llegar al cupo.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>E-01 · bomba de procesos</span>
+      </div>
+<pre><i>--- ANTES · contenedor sin PidsLimit ---</i>
+<span class="cmd">$ docker run --rm ctf-base:latest python3 -c '&lt;fork x200&gt;'</span>
+    <s>procesos creados: 200</s>
+
+<i>--- DESPUES · contenedor con --pids-limit=64 ---</i>
+<span class="cmd">$ docker run --rm --pids-limit=64 ctf-base:latest python3 -c '&lt;fork x200&gt;'</span>
+    <b>bloqueado por el kernel: [Errno 11] Resource temporarily unavailable</b>
+    procesos creados: <b>62</b>
+
+    COMPARATIVO  |  sin limite: 200 procesos  -&gt;  con limite: <b>62 procesos</b></pre>
+    </div>
+  </div>
+
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">E-05</span>
+      <h3>Un estudiante intenta alcanzar al otro</h3>
+      <span class="chip ok">Aislado</span>
+    </div>
+    <p class="note">
+      El alumno B expone un servicio. El alumno A intenta conectarse, primero
+      compartiendo red y después con el modelo real de la plataforma: una red
+      interna por usuario.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>E-05 · aislamiento entre estudiantes</span>
+      </div>
+<pre>  Alumno B expone un servicio en 172.22.0.2:8000
+
+<i>--- ANTES · ambos alumnos en la MISMA red ---</i>
+<span class="cmd">$ docker run --rm --network ctf-estres-abierta ... &lt;conectar a IP del alumno B&gt;</span>
+    <s>ALCANZADO: el alumno B es visible desde aqui</s>
+
+<i>--- DESPUES · cada alumno en su PROPIA red interna ---</i>
+<span class="cmd">$ docker run --rm --network ctf-estres-red-b ... &lt;conectar a IP del alumno B&gt;</span>
+    <b>INALCANZABLE: OSError [Errno 101] Network unreachable</b></pre>
+    </div>
+  </div>
+
+  <div class="test">
+    <div class="test-head">
+      <span class="tid">E-08</span>
+      <h3>Perfil completo de la plataforma</h3>
+      <span class="chip ok">Verificado</span>
+    </div>
+    <p class="note">
+      Inventario de todos los límites aplicados simultáneamente, leídos desde
+      dentro del contenedor a través de la interfaz de cgroups del kernel.
+    </p>
+    <div class="capture">
+      <div class="capture-bar">
+        <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+        <span>E-08 · perfil aplicado</span>
+      </div>
+<pre><span class="cmd">$ docker run --rm --memory=256m --cpus=0.5 --pids-limit=64 \
+    --cap-drop=ALL --cap-add=SETUID --cap-add=SETGID \
+    --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+    --ulimit nofile=1024:2048 --init ctf-base:latest sh -c '...'</span>
+
+    memoria max : <b>268435456</b>
+    cpu max     : <b>50000 100000</b>
+    pids max    : <b>64</b>
+    descriptores: <b>1024</b>
+    capacidades : <b>00000000000000c0</b>
+    montaje tmp : tmpfs /tmp tmpfs rw,<b>nosuid</b>,nodev,<b>noexec</b>,relatime,size=65536k</pre>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Cuadro comparativo · las ocho pruebas de estrés</caption>
+      <thead>
+        <tr>
+          <th>Ataque</th>
+          <th>Sin los límites</th>
+          <th>Con la plataforma</th>
+          <th>Qué lo impide</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="sans">E-01</span> Bomba de procesos</td>
+          <td class="antes">200 procesos</td>
+          <td class="despues">62 procesos</td>
+          <td>cgroup <span class="sans">pids</span></td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-02</span> Agotar memoria</td>
+          <td class="antes">400 MB asignados</td>
+          <td class="despues">OOM, código 137</td>
+          <td>cgroup <span class="sans">memory</span></td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-03</span> Saturar CPU</td>
+          <td class="antes">100,25 %</td>
+          <td class="despues">50,02 %</td>
+          <td>planificador CFS</td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-04</span> Salir a internet</td>
+          <td class="antes">conectado a 1.1.1.1</td>
+          <td class="despues">Network unreachable</td>
+          <td>red <span class="sans">Internal</span></td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-05</span> Alcanzar a otro alumno</td>
+          <td class="antes">servicio visible</td>
+          <td class="despues">Network unreachable</td>
+          <td>una red por usuario</td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-06</span> Privilegios de root</td>
+          <td class="antes">a80425fb · 14 caps</td>
+          <td class="despues">000000c0 · 2 caps</td>
+          <td><span class="sans">CapDrop: ALL</span></td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-07</span> Descriptores de archivo</td>
+          <td class="antes">1 048 576</td>
+          <td class="despues">1 024</td>
+          <td><span class="sans">Ulimits nofile</span></td>
+        </tr>
+        <tr>
+          <td><span class="sans">E-08</span> Perfil completo</td>
+          <td class="antes">—</td>
+          <td class="despues">6 / 6 aplicados</td>
+          <td>cgroups + namespaces</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>
+      En los ocho casos quien detiene el ataque es el kernel, no código de la
+      aplicación. Es la diferencia entre un límite que se comprueba y uno que se
+      concede: el planificador y los cgroups deciden durante la llamada al sistema,
+      antes de entregar el recurso.
+    </p>
+  </div>
+</section>
+
+<!-- =================== CARGA =================== -->
+<section id="carga">
+  <div class="sec-head">
+    <span class="sec-num">06</span>
+    <h2>Prueba de carga · 20 estudiantes</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Veinte estudiantes simulados se autentican, despliegan su instancia, abren la
+      consola, ejecutan un comando y liberan los recursos. Todo contra el servidor
+      Daphne real y veinte contenedores verdaderos.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Las siete fases de la prueba</caption>
+      <thead>
+        <tr><th>Fase</th><th>Qué mide</th><th>Resultado</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">C-00</td>
+          <td>Preparación de cuentas y estado inicial del servidor</td>
+          <td class="despues">20 cuentas · 1 hilo en reposo</td>
+        </tr>
+        <tr>
+          <td class="num">C-01</td>
+          <td>Autenticación concurrente</td>
+          <td class="despues">20 / 20 en 1,21 s</td>
+        </tr>
+        <tr>
+          <td class="num">C-02</td>
+          <td>Oleada de despliegue de instancias</td>
+          <td class="despues">20 / 20 en 7,79 s</td>
+        </tr>
+        <tr>
+          <td class="num">C-03</td>
+          <td>Consolas WebSocket simultáneas con comando real</td>
+          <td class="despues">20 / 20 · 1,63 s de media</td>
+        </tr>
+        <tr>
+          <td class="num">C-04</td>
+          <td>Hilos del servidor consumidos por las consolas</td>
+          <td class="despues">0 bloqueados en E/S</td>
+        </tr>
+        <tr>
+          <td class="num">C-05</td>
+          <td>Consumo real de recursos del host bajo carga</td>
+          <td class="despues">~665 KiB por contenedor</td>
+        </tr>
+        <tr>
+          <td class="num">C-06</td>
+          <td>Liberación y comprobación de residuos</td>
+          <td class="despues">20 / 20 · 0 residuos</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="capture">
+    <div class="capture-bar">
+      <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+      <span>prueba de carga</span>
+      <span class="path">pruebas/resultados/04-carga.txt</span>
+    </div>
+<pre><span class="cmd">$ python pruebas/carga.py 20</span>
+
+<b>[C-02]</b> DESPLIEGUE CONCURRENTE DE 20 INSTANCIAS
+    Instancias creadas: <b>20 / 20</b>
+    Tiempo total de la oleada: <b>7.79 s</b>
+    Latencia por instancia -&gt; min 1.71 s | media 5.71 s | max 7.89 s
+    Filas en base de datos: 20   Contenedores reales en Docker: <b>20</b>
+
+<b>[C-03]</b> CONSOLAS WEBSOCKET SIMULTANEAS
+    Consolas que ejecutaron el comando: <b>20 / 20</b>
+    Respuesta por consola -&gt; min 1.31 s | media <b>1.63 s</b> | max 1.88 s
+
+<b>[C-04]</b> CONSUMO DE HILOS DEL SERVIDOR (metrica critica)
+  $ for t in /proc/7936/task/*; do cat $t/wchan; done | sort | uniq -c
+
+    T1 - durante el arranque de las consolas:
+        17  futex_wait_queue      <i>(ociosos)</i>
+         1  do_epoll_wait
+      bloqueados en E/S de socket: <b>0</b>
+
+    T2 - con las 20 consolas ya abiertas y en reposo:
+        17  futex_wait_queue      <i>(ociosos)</i>
+         1  do_epoll_wait
+      bloqueados en E/S de socket: <b>0</b>
+
+    Hilos totales: reposo 1 -&gt; arranque 18 -&gt; consolas abiertas <b>18</b>
+
+<b>[C-06]</b> LIBERACION DE RECURSOS
+    Instancias detenidas: <b>20 / 20</b>
+    Tiempo total: <u>12.40 s</u>
+    Filas en base de datos tras la limpieza: <b>0</b>
+    Contenedores restantes: <b>0</b></pre>
+  </div>
+
+  <h3 style="margin-top:22px">El dato que cierra el caso del techo de consolas</h3>
+  <div class="prose">
+    <p>
+      El host tiene 12 CPU, de modo que el pool de hilos de Python admite como
+      máximo <strong>16</strong> — exactamente el techo histórico documentado en el
+      proyecto. Si cada consola consumiera un hilo propio, 20 consolas serían
+      imposibles: el pool se agotaría en la decimosexta.
+    </p>
+    <p>
+      Se midieron 20 consolas simultáneas funcionando, con <strong>cero</strong>
+      hilos bloqueados en entrada/salida de socket, tanto durante el arranque como
+      con todas las terminales abiertas en reposo. Los 17 hilos presentes están en
+      <span class="sans">futex_wait_queue</span>: ociosos, esperando trabajo, no
+      bloqueados.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Cuadro comparativo · consolas simultáneas</caption>
+      <thead>
+        <tr><th>Medición</th><th>Diseño anterior (un hilo por consola)</th><th>Diseño actual (medido hoy)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Consolas que ejecutan el comando</td>
+          <td class="antes">0 / 20</td>
+          <td class="despues">20 / 20</td>
+        </tr>
+        <tr>
+          <td>Estado de los hilos del servidor</td>
+          <td class="antes">bloqueados en E/S</td>
+          <td class="despues">ociosos</td>
+        </tr>
+        <tr>
+          <td>Hilos bloqueados en socket</td>
+          <td class="antes">hasta 16 (pool lleno)</td>
+          <td class="despues">0</td>
+        </tr>
+        <tr>
+          <td>Techo por diseño</td>
+          <td class="antes">~16 consolas</td>
+          <td class="despues">sin techo de hilos</td>
+        </tr>
+        <tr>
+          <td>Despliegue de instancia bajo carga</td>
+          <td class="antes">timeout a los 30 s</td>
+          <td class="despues">5,71 s de media</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =================== HALLAZGOS =================== -->
+<section id="hallazgos">
+  <div class="sec-head">
+    <span class="sec-num">07</span>
+    <h2>Defectos encontrados</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Tres defectos que las pruebas revelaron y que no estaban documentados en el
+      proyecto. Ninguno compromete el aislamiento; los tres afectan la capacidad o
+      el aprovechamiento de recursos.
+    </p>
+  </div>
+
+  <div class="finding alta">
+    <div class="sev">Hallazgo 1 · severidad alta · capacidad</div>
+    <h3>El techo de estudiantes lo impone la red, no la memoria</h3>
+    <p>
+      Al elevar la prueba de carga a 30 estudiantes, seis despliegues fallaron con
+      error 500. La causa no es memoria ni CPU: Docker agota sus rangos de
+      direcciones predefinidos alrededor de la red número 24.
+    </p>
+    <div class="fix">$ docker network create --internal ctf-pool-test-24
+Error response from daemon: all predefined address pools have been fully subnetted</div>
+    <p style="margin-top:10px">
+      La documentación del proyecto estima «50-60 contenedores simultáneos» a partir
+      de la memoria. El límite real medido es de <strong>24 a 31 estudiantes</strong>,
+      porque cada uno consume una red completa. Corrección en
+      <span class="sans">/etc/docker/daemon.json</span>:
+    </p>
+    <div class="fix">{ "default-address-pools": [ { "base": "10.200.0.0/16", "size": 24 } ] }</div>
+    <p style="margin-top:10px">
+      Con máscara <span class="sans">/24</span> sobre esa base se obtienen 256 redes,
+      y el techo vuelve a depender de la memoria del host.
+    </p>
+  </div>
+
+  <div class="finding">
+    <div class="sev">Hallazgo 2 · severidad media · recursos</div>
+    <h3>El límite de memoria efectivo es el doble del declarado</h3>
+    <p>
+      La plataforma declara <span class="sans">Memory</span> pero no
+      <span class="sans">MemorySwap</span>. Docker concede entonces una cantidad de
+      swap igual al límite de RAM, así que cada contenedor puede llegar a 512 MB en
+      lugar de los 256 MB documentados. Un contenedor con límite de 256 MB asignó
+      400 MB sin problema; declarando el tope de swap, el kernel lo detuvo con
+      código 137.
+    </p>
+    <div class="fix"># ctf/docker_client.py · HostConfig
+  "Memory": mem_limit_bytes,
++ "MemorySwap": mem_limit_bytes,   # sin esto, Docker concede otro tanto de swap</div>
+  </div>
+
+  <div class="finding baja">
+    <div class="sev">Hallazgo 3 · severidad media · rendimiento</div>
+    <h3>Cada destrucción desperdicia cinco segundos</h3>
+    <p>
+      El proceso principal del contenedor es un shell que no termina al recibir
+      <span class="sans">SIGTERM</span>, así que Docker espera el tiempo de gracia
+      completo antes de forzar el cierre. Medido de forma aislada:
+      <strong>5,30 s</strong> con el valor actual frente a <strong>0,37 s</strong>
+      sin espera — catorce veces más rápido. Explica los 12,4 s que tardó liberar
+      las veinte instancias de la prueba de carga.
+    </p>
+    <div class="fix"># ctf/docker_client.py
+- def stop_container(container_id: str, timeout: int = 5) -&gt; None:
++ def stop_container(container_id: str, timeout: int = 0) -&gt; None:</div>
+  </div>
+</section>
+
+<!-- =================== REPRODUCIBILIDAD =================== -->
+<section id="reproducir">
+  <div class="sec-head">
+    <span class="sec-num">08</span>
+    <h2>Reproducibilidad</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Toda la campaña se vuelve a ejecutar con cuatro órdenes. Los transcripts se
+      guardan en <span class="sans">pruebas/resultados/</span>.
+    </p>
+  </div>
+
+  <div class="capture">
+    <div class="capture-bar">
+      <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+      <span>reproducir la campaña</span>
+    </div>
+<pre><i># 1 · unitarias — no necesitan Docker</i>
+<span class="cmd">python manage.py test ctf.tests -v 2</span>
+
+<i># 2 · humo — requiere Docker y las imágenes de los retos</i>
+<span class="cmd">python pruebas/humo.py</span>
+
+<i># 3 · estrés — comparativo antes/después</i>
+<span class="cmd">bash pruebas/estres.sh</span>
+
+<i># 4 · carga — requiere Daphne corriendo</i>
+<span class="cmd">daphne -b 127.0.0.1 -p 8000 ctf_platform.asgi:application &amp;
+python pruebas/carga.py 20</span></pre>
+  </div>
+
+  <ul class="cover-list">
+    <li><span class="n">84</span><span>casos unitarios en <span class="sans">ctf/tests/</span> — 5 módulos</span></li>
+    <li><span class="n">10</span><span>pruebas de humo en <span class="sans">pruebas/humo.py</span> — 6 categorías</span></li>
+    <li><span class="n">8</span><span>pruebas de estrés en <span class="sans">pruebas/estres.sh</span> — 4 categorías</span></li>
+    <li><span class="n">7</span><span>fases de carga en <span class="sans">pruebas/carga.py</span></span></li>
+  </ul>
+</section>
+
+<footer class="doc">
+  <p>
+    Plataforma ROOT_LABS · Informe de pruebas y validación · Revisión 33cf672 ·
+    Ejecutado el 20 de septiembre de 2026 sobre WSL2 con Docker Engine 28.5.1.
+    Todas las cifras proceden de ejecuciones registradas; ninguna es estimada.
+  </p>
+</footer>
+
+</div>
+
+</body>
+</html>

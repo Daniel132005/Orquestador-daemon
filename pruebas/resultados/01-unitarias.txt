@@ -1,0 +1,157 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Found 84 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: channels, messages, staticfiles
+  Apply all migrations: admin, auth, contenttypes, ctf, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying ctf.0001_initial... OK
+  Applying ctf.0002_instance_challenge... OK
+  Applying ctf.0003_solvedchallenge... OK
+  Applying ctf.0004_platformsettings... OK
+  Applying ctf.0005_platformsettings_time_limit_basico_seconds_and_more... OK
+  Applying ctf.0006_instance_failed_flag_attempts... OK
+  Applying ctf.0007_onboardingstate... OK
+  Applying ctf.0008_onboardingstate_tour_visto... OK
+  Applying ctf.0009_instancedestructionnotice... OK
+  Applying sessions.0001_initial...test_la_bandera_cambia_entre_retos_del_mismo_usuario (ctf.tests.test_challenges.BanderaDinamicaTest.test_la_bandera_cambia_entre_retos_del_mismo_usuario) ... ok
+test_la_bandera_cambia_entre_usuarios (ctf.tests.test_challenges.BanderaDinamicaTest.test_la_bandera_cambia_entre_usuarios) ... ok
+test_la_bandera_es_determinista_para_el_mismo_usuario (ctf.tests.test_challenges.BanderaDinamicaTest.test_la_bandera_es_determinista_para_el_mismo_usuario) ... ok
+test_la_bandera_respeta_el_formato_publicado (ctf.tests.test_challenges.BanderaDinamicaTest.test_la_bandera_respeta_el_formato_publicado) ... ok
+test_todos_los_retos_generan_banderas_distintas_entre_si (ctf.tests.test_challenges.BanderaDinamicaTest.test_todos_los_retos_generan_banderas_distintas_entre_si) ... ok
+test_cada_reto_cubre_una_categoria_owasp_distinta (ctf.tests.test_challenges.CatalogoRetosTest.test_cada_reto_cubre_una_categoria_owasp_distinta) ... ok
+test_el_catalogo_tiene_diez_retos (ctf.tests.test_challenges.CatalogoRetosTest.test_el_catalogo_tiene_diez_retos) ... ok
+test_el_reto_por_defecto_existe_en_el_catalogo (ctf.tests.test_challenges.CatalogoRetosTest.test_el_reto_por_defecto_existe_en_el_catalogo) ... ok
+test_get_challenge_devuelve_none_si_no_existe (ctf.tests.test_challenges.CatalogoRetosTest.test_get_challenge_devuelve_none_si_no_existe) ... ok
+test_todas_las_dificultades_son_validas (ctf.tests.test_challenges.CatalogoRetosTest.test_todas_las_dificultades_son_validas) ... ok
+test_todos_los_retos_declaran_los_campos_obligatorios (ctf.tests.test_challenges.CatalogoRetosTest.test_todos_los_retos_declaran_los_campos_obligatorios) ... ok
+test_list_challenges_devuelve_todos_los_retos_con_xp (ctf.tests.test_challenges.ExposicionDeDatosTest.test_list_challenges_devuelve_todos_los_retos_con_xp) ... ok
+test_list_challenges_no_expone_ninguna_bandera (ctf.tests.test_challenges.ExposicionDeDatosTest.test_list_challenges_no_expone_ninguna_bandera) ... ok
+test_acepta_la_bandera_propia (ctf.tests.test_challenges.ValidacionBanderaTest.test_acepta_la_bandera_propia) ... ok
+test_ignora_espacios_alrededor_de_la_bandera (ctf.tests.test_challenges.ValidacionBanderaTest.test_ignora_espacios_alrededor_de_la_bandera) ... ok
+test_rechaza_bandera_vacia (ctf.tests.test_challenges.ValidacionBanderaTest.test_rechaza_bandera_vacia) ... ok
+test_rechaza_la_bandera_correcta_de_otro_reto (ctf.tests.test_challenges.ValidacionBanderaTest.test_rechaza_la_bandera_correcta_de_otro_reto) ... ok
+test_rechaza_la_bandera_de_otro_estudiante (ctf.tests.test_challenges.ValidacionBanderaTest.test_rechaza_la_bandera_de_otro_estudiante)
+Compartir la bandera con un companero no debe servir de nada. ... ok
+test_rechaza_reto_inexistente (ctf.tests.test_challenges.ValidacionBanderaTest.test_rechaza_reto_inexistente) ... ok
+test_rechaza_si_no_se_identifica_al_usuario (ctf.tests.test_challenges.ValidacionBanderaTest.test_rechaza_si_no_se_identifica_al_usuario) ... ok
+test_los_tres_motivos_estan_disponibles (ctf.tests.test_models.InstanceDestructionNoticeTest.test_los_tres_motivos_estan_disponibles) ... ok
+test_se_puede_registrar_un_aviso (ctf.tests.test_models.InstanceDestructionNoticeTest.test_se_puede_registrar_un_aviso) ... ok
+test_borrar_el_usuario_borra_su_instancia (ctf.tests.test_models.InstanceTest.test_borrar_el_usuario_borra_su_instancia) ... ok
+test_dos_usuarios_distintos_pueden_tener_instancia_a_la_vez (ctf.tests.test_models.InstanceTest.test_dos_usuarios_distintos_pueden_tener_instancia_a_la_vez) ... ok
+test_el_contador_de_intentos_arranca_en_cero (ctf.tests.test_models.InstanceTest.test_el_contador_de_intentos_arranca_en_cero) ... ok
+test_un_usuario_no_puede_tener_dos_instancias (ctf.tests.test_models.InstanceTest.test_un_usuario_no_puede_tener_dos_instancias) ... ok
+test_actual_crea_la_fila_si_no_existe (ctf.tests.test_models.PlatformSettingsTest.test_actual_crea_la_fila_si_no_existe) ... ok
+test_actual_devuelve_siempre_la_misma_fila (ctf.tests.test_models.PlatformSettingsTest.test_actual_devuelve_siempre_la_misma_fila) ... ok
+test_dificultad_desconocida_usa_el_limite_basico (ctf.tests.test_models.PlatformSettingsTest.test_dificultad_desconocida_usa_el_limite_basico) ... ok
+test_el_cambio_se_persiste_sin_reiniciar (ctf.tests.test_models.PlatformSettingsTest.test_el_cambio_se_persiste_sin_reiniciar)
+Simula el ajuste en caliente desde el panel oculto. ... ok
+test_limite_de_tiempo_por_dificultad (ctf.tests.test_models.PlatformSettingsTest.test_limite_de_tiempo_por_dificultad) ... ok
+test_dos_usuarios_pueden_resolver_el_mismo_reto (ctf.tests.test_models.SolvedChallengeTest.test_dos_usuarios_pueden_resolver_el_mismo_reto) ... ok
+test_no_se_puede_registrar_dos_veces_el_mismo_reto (ctf.tests.test_models.SolvedChallengeTest.test_no_se_puede_registrar_dos_veces_el_mismo_reto) ... ok
+test_la_red_es_de_tipo_bridge (ctf.tests.test_seguridad.AislamientoDeRedTest.test_la_red_es_de_tipo_bridge) ... ok
+test_la_red_es_interna_sin_salida_a_internet (ctf.tests.test_seguridad.AislamientoDeRedTest.test_la_red_es_interna_sin_salida_a_internet) ... ok
+test_acota_el_tamano_de_los_logs_en_disco (ctf.tests.test_seguridad.EndurecimientoContenedorTest.test_acota_el_tamano_de_los_logs_en_disco) ... ok
+test_descarta_todas_las_capacidades_del_kernel (ctf.tests.test_seguridad.EndurecimientoContenedorTest.test_descarta_todas_las_capacidades_del_kernel) ... ok
+test_solo_devuelve_las_capacidades_minimas_para_sudo (ctf.tests.test_seguridad.EndurecimientoContenedorTest.test_solo_devuelve_las_capacidades_minimas_para_sudo)
+El diseno de los retos necesita sudo. Se devuelven SETUID y SETGID ... ok
+test_tmp_esta_en_memoria_sin_ejecucion_ni_setuid (ctf.tests.test_seguridad.EndurecimientoContenedorTest.test_tmp_esta_en_memoria_sin_ejecucion_ni_setuid) ... ok
+test_usa_un_init_que_cosecha_procesos_zombis (ctf.tests.test_seguridad.EndurecimientoContenedorTest.test_usa_un_init_que_cosecha_procesos_zombis)
+Sin esto, una fork bomb deja zombis pegados contra PidsLimit y el ... ok
+test_declara_limite_de_cpu (ctf.tests.test_seguridad.LimitesDeRecursosTest.test_declara_limite_de_cpu) ... ok
+test_declara_limite_de_descriptores_de_archivo (ctf.tests.test_seguridad.LimitesDeRecursosTest.test_declara_limite_de_descriptores_de_archivo) ... ok
+test_declara_limite_de_memoria (ctf.tests.test_seguridad.LimitesDeRecursosTest.test_declara_limite_de_memoria) ... ok
+test_declara_limite_de_procesos (ctf.tests.test_seguridad.LimitesDeRecursosTest.test_declara_limite_de_procesos)
+Sin PidsLimit una fork bomb del estudiante alcanza al host. ... ok
+test_el_contenedor_usa_la_red_del_usuario (ctf.tests.test_seguridad.LimitesDeRecursosTest.test_el_contenedor_usa_la_red_del_usuario) ... ok
+test_el_profesor_si_accede_a_la_configuracion (ctf.tests.test_seguridad.PanelAdministracionTest.test_el_profesor_si_accede_a_la_configuracion) ... ok
+test_un_anonimo_tampoco_accede (ctf.tests.test_seguridad.PanelAdministracionTest.test_un_anonimo_tampoco_accede) ... ok
+test_un_estudiante_no_accede_a_la_configuracion (ctf.tests.test_seguridad.PanelAdministracionTest.test_un_estudiante_no_accede_a_la_configuracion) ... ok
+test_un_estudiante_no_puede_destruir_instancias_ajenas (ctf.tests.test_seguridad.PanelAdministracionTest.test_un_estudiante_no_puede_destruir_instancias_ajenas) ... ok
+test_get_sin_sesion_no_devuelve_datos (ctf.tests.test_views.AutenticacionRequeridaTest.test_get_sin_sesion_no_devuelve_datos) ... ok
+test_la_terminal_no_es_publica (ctf.tests.test_views.AutenticacionRequeridaTest.test_la_terminal_no_es_publica) ... ok
+test_post_sin_sesion_no_ejecuta_nada (ctf.tests.test_views.AutenticacionRequeridaTest.test_post_sin_sesion_no_ejecuta_nada) ... ok
+test_devuelve_los_diez_retos (ctf.tests.test_views.CatalogoAPITest.test_devuelve_los_diez_retos) ... ok
+test_no_filtra_ninguna_bandera_al_frontend (ctf.tests.test_views.CatalogoAPITest.test_no_filtra_ninguna_bandera_al_frontend) ... ok
+test_despliega_y_registra_la_instancia (ctf.tests.test_views.DespliegueInstanciaTest.test_despliega_y_registra_la_instancia) ... ok
+test_inyecta_la_bandera_del_estudiante_en_el_contenedor (ctf.tests.test_views.DespliegueInstanciaTest.test_inyecta_la_bandera_del_estudiante_en_el_contenedor) ... ok
+test_la_red_es_exclusiva_del_usuario (ctf.tests.test_views.DespliegueInstanciaTest.test_la_red_es_exclusiva_del_usuario) ... ok
+test_rechaza_un_reto_inexistente (ctf.tests.test_views.DespliegueInstanciaTest.test_rechaza_un_reto_inexistente) ... ok
+test_rechaza_una_segunda_instancia_del_mismo_usuario (ctf.tests.test_views.DespliegueInstanciaTest.test_rechaza_una_segunda_instancia_del_mismo_usuario) ... ok
+test_si_docker_falla_no_deja_recursos_colgados (ctf.tests.test_views.DespliegueInstanciaTest.test_si_docker_falla_no_deja_recursos_colgados)
+Sin limpieza, quedarian red y contenedor sin fila que los reclame. ... ok
+test_destruye_contenedor_red_y_fila (ctf.tests.test_views.DetenerInstanciaTest.test_destruye_contenedor_red_y_fila) ... ok
+test_si_docker_falla_conserva_la_fila (ctf.tests.test_views.DetenerInstanciaTest.test_si_docker_falla_conserva_la_fila) ... ok
+test_sin_instancia_activa_responde_404 (ctf.tests.test_views.DetenerInstanciaTest.test_sin_instancia_activa_responde_404) ... ok
+test_al_quinto_fallo_destruye_la_instancia (ctf.tests.test_views.EnvioBanderaTest.test_al_quinto_fallo_destruye_la_instancia)
+Corta la fuerza bruta de banderas y libera el contenedor. ... ok
+test_bandera_correcta_registra_el_reto_resuelto (ctf.tests.test_views.EnvioBanderaTest.test_bandera_correcta_registra_el_reto_resuelto) ... ok
+test_bandera_de_otro_estudiante_no_sirve (ctf.tests.test_views.EnvioBanderaTest.test_bandera_de_otro_estudiante_no_sirve) ... ok
+test_bandera_vacia_se_rechaza_sin_gastar_intento (ctf.tests.test_views.EnvioBanderaTest.test_bandera_vacia_se_rechaza_sin_gastar_intento) ... ok
+test_cada_fallo_descuenta_un_intento (ctf.tests.test_views.EnvioBanderaTest.test_cada_fallo_descuenta_un_intento) ... ok
+test_json_invalido_se_rechaza (ctf.tests.test_views.EnvioBanderaTest.test_json_invalido_se_rechaza) ... ok
+test_redesplegar_reinicia_el_contador_de_intentos (ctf.tests.test_views.EnvioBanderaTest.test_redesplegar_reinicia_el_contador_de_intentos) ... ok
+test_resolver_dos_veces_no_duplica_el_progreso (ctf.tests.test_views.EnvioBanderaTest.test_resolver_dos_veces_no_duplica_el_progreso) ... ok
+test_reto_inexistente_responde_404 (ctf.tests.test_views.EnvioBanderaTest.test_reto_inexistente_responde_404) ... ok
+test_barre_varias_instancias_en_una_pasada (ctf.tests.test_watchdog.WatchdogTest.test_barre_varias_instancias_en_una_pasada) ... 2026-09-20 19:46:21,626 INFO ctf.watchdog: Destruyendo instancia de masivo0 (cccccccccccc) por vida máxima: inactiva hace 3s, viva hace 401s
+2026-09-20 19:46:21,628 INFO ctf.watchdog: Destruyendo instancia de masivo1 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+2026-09-20 19:46:21,630 INFO ctf.watchdog: Destruyendo instancia de masivo2 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+2026-09-20 19:46:21,632 INFO ctf.watchdog: Destruyendo instancia de masivo3 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+2026-09-20 19:46:21,633 INFO ctf.watchdog: Destruyendo instancia de masivo4 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+ok
+test_barrido_sin_instancias_no_falla (ctf.tests.test_watchdog.WatchdogTest.test_barrido_sin_instancias_no_falla) ... ok
+test_deja_aviso_con_el_motivo_correcto (ctf.tests.test_watchdog.WatchdogTest.test_deja_aviso_con_el_motivo_correcto) ... 2026-09-20 19:46:21,905 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+ok
+test_destruye_por_inactividad (ctf.tests.test_watchdog.WatchdogTest.test_destruye_por_inactividad)
+Aisla la condicion de inactividad: el umbral se baja a 60 s para ... 2026-09-20 19:46:22,046 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por inactividad: inactiva hace 90s, viva hace 120s
+ok
+test_destruye_por_vida_maxima_aunque_este_activa (ctf.tests.test_watchdog.WatchdogTest.test_destruye_por_vida_maxima_aunque_este_activa)
+Caso que motivo el limite absoluto: un bucle que imprime cada ... 2026-09-20 19:46:22,168 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+ok
+test_el_aviso_por_inactividad_lleva_ese_motivo (ctf.tests.test_watchdog.WatchdogTest.test_el_aviso_por_inactividad_lleva_ese_motivo)
+El motivo registrado debe distinguir abandono de vida maxima. ... 2026-09-20 19:46:22,296 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por inactividad: inactiva hace 90s, viva hace 120s
+ok
+test_la_vida_maxima_depende_de_la_dificultad (ctf.tests.test_watchdog.WatchdogTest.test_la_vida_maxima_depende_de_la_dificultad)
+350 s mata a un reto basico (300 s) pero no a uno intermedio (600 s). ... 2026-09-20 19:46:22,664 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 5s, viva hace 350s
+ok
+test_no_destruye_justo_antes_del_umbral (ctf.tests.test_watchdog.WatchdogTest.test_no_destruye_justo_antes_del_umbral)
+Frontera: 299 s de vida con limite de 300 s todavia sobrevive. ... ok
+test_no_destruye_una_instancia_activa_y_reciente (ctf.tests.test_watchdog.WatchdogTest.test_no_destruye_una_instancia_activa_y_reciente) ... ok
+test_reto_fuera_del_catalogo_usa_el_limite_global (ctf.tests.test_watchdog.WatchdogTest.test_reto_fuera_del_catalogo_usa_el_limite_global)
+Instancia de un reto ya eliminado: no debe quedar viva para siempre. ... 2026-09-20 19:46:23,128 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 5s, viva hace 200s
+ok
+test_si_docker_falla_no_borra_la_fila (ctf.tests.test_watchdog.WatchdogTest.test_si_docker_falla_no_borra_la_fila)
+Regla critica: borrar la fila con el contenedor aun vivo lo ... 2026-09-20 19:46:23,308 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+2026-09-20 19:46:23,309 ERROR ctf.watchdog: No se pudo destruir cccccccccccc: daemon caido
+ok
+test_un_fallo_no_impide_limpiar_las_demas (ctf.tests.test_watchdog.WatchdogTest.test_un_fallo_no_impide_limpiar_las_demas) ... 2026-09-20 19:46:23,632 INFO ctf.watchdog: Destruyendo instancia de alumno1 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+2026-09-20 19:46:23,633 ERROR ctf.watchdog: No se pudo destruir cccccccccccc: fallo puntual
+2026-09-20 19:46:23,634 INFO ctf.watchdog: Destruyendo instancia de alumno2 (cccccccccccc) por vida máxima: inactiva hace 2s, viva hace 400s
+ok
+
+----------------------------------------------------------------------
+Ran 84 tests in 8.351s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+ OK
+System check identified no issues (0 silenced).

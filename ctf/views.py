@@ -534,26 +534,7 @@ def instance_status(request):
         "max_lifetime_seconds": (
             challenges.time_limit_for(instance.challenge) if instance else config.max_lifetime_seconds
         ),
-        "destroyed_notice": None,
     }
-
-    # Sin instancia activa: si hay un aviso pendiente de POR QUÉ se destruyó
-    # la última (admin, inactividad, vida máxima), se entrega y se consume
-    # (se borra) para que se muestre una sola vez, no en cada poll futuro.
-    if instance is None:
-        aviso = (
-            InstanceDestructionNotice.objects.filter(user=request.user)
-            .order_by("-created_at")
-            .first()
-        )
-        if aviso is not None:
-            payload["destroyed_notice"] = {
-                "reason": aviso.motivo,
-                "message": aviso.get_motivo_display(),
-                "challenge": aviso.challenge_slug,
-            }
-            InstanceDestructionNotice.objects.filter(user=request.user).delete()
-
     return JsonResponse(payload)
 
 
@@ -748,12 +729,6 @@ def start_instance(request):
         # el contenedor sería un huérfano que nadie volvería a reclamar.
         docker_client.destroy_instance(container_id, network_id)
         return JsonResponse({"error": f"Error de base de datos: {exc}"}, status=503)
-
-    # Cualquier aviso de destrucción pendiente de una instancia anterior ya
-    # dejó de ser relevante: el usuario ya está en una instancia nueva. Sin
-    # esto, si nadie llegó a consultar el estado mientras estaba inactivo,
-    # ese aviso viejo aparecería más tarde pegado a esta instancia nueva.
-    InstanceDestructionNotice.objects.filter(user=request.user).delete()
 
     return JsonResponse(
         {

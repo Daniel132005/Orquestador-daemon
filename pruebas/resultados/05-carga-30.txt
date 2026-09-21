@@ -1,0 +1,133 @@
+PRUEBA DE CARGA - PLATAFORMA CTF
+Fecha: 2026-09-20 19:20:28
+Estudiantes simulados: 30
+Reto desplegado por cada uno: injection-sqli
+PID de Daphne: 6887
+
+========================================================================
+[C-00] PREPARACION: cuentas de estudiante y estado inicial
+========================================================================
+  $ User.objects.create_user(...) x 30
+    Cuentas listas: 30 (nuevas: 10)
+    Hilos del servidor en reposo: 5
+    Sockets abiertos en reposo: 7
+    Contenedores CTF vivos: 0
+
+========================================================================
+[C-01] AUTENTICACION CONCURRENTE DE 30 ESTUDIANTES
+========================================================================
+  $ POST /login/ x 30 en paralelo
+    Sesiones iniciadas: 30 / 30
+    Tiempo total: 4.74 s
+
+========================================================================
+[C-02] DESPLIEGUE CONCURRENTE DE 30 INSTANCIAS
+========================================================================
+  $ POST /api/instance/start/ x 30 en paralelo
+    Instancias creadas: 24 / 30
+    Tiempo total de la oleada: 15.90 s
+    Latencia por instancia -> min 5.89 s | media 13.98 s | max 15.77 s
+      respuesta inesperada: 500
+      respuesta inesperada: 500
+      respuesta inesperada: 500
+      respuesta inesperada: 500
+      respuesta inesperada: 500
+      respuesta inesperada: 500
+      carga14: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+      carga15: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+      carga21: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+      carga23: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+      carga24: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+      carga30: start -> 500 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" conten
+    Filas en base de datos: 24
+    Contenedores reales en Docker: 24
+
+========================================================================
+[C-03] CONSOLAS WEBSOCKET SIMULTANEAS
+========================================================================
+  $ ws://127.0.0.1:8000/ws/terminal/ x 30 + 'echo CARGA-OK-nn'
+    Consolas que ejecutaron el comando: 22 / 24
+    Tiempo total: 6.12 s
+    Respuesta por consola -> min 1.41 s | media 3.36 s | max 5.06 s
+      consola 28 fallo: InvalidMessage
+      consola 29 fallo: InvalidMessage
+
+========================================================================
+[C-04] CONSUMO DE HILOS DEL SERVIDOR (metrica critica)
+========================================================================
+  $ cat /proc/6887/status | grep Threads
+    Hilos en reposo            : 5
+    Hilos con 24 consolas abiertas: 19
+    Crecimiento: +14 hilos para 24 consolas
+    Hilos por consola: 0.58
+  $ for t in /proc/6887/task/*; do cat $t/wchan; done | sort | uniq -c
+      11  unix_stream_read_generic
+       5  futex_wait_queue
+       1  do_epoll_wait
+       1  hrtimer_nanosleep
+       1  0
+    Hilos bloqueados en E/S de socket: 11
+    Sockets abiertos por el servidor: 48 (en reposo eran 49)
+
+========================================================================
+[C-05] RECURSOS DEL HOST BAJO CARGA
+========================================================================
+  $ docker stats --no-stream
+    loving_panini 0.05% 676KiB / 256MiB
+    kind_spence 0.01% 680KiB / 256MiB
+    festive_cori 0.00% 676KiB / 256MiB
+    elegant_joliot 0.00% 672KiB / 256MiB
+    beautiful_raman 0.01% 668KiB / 256MiB
+    ... (se muestran las primeras 5 de 24)
+    Memoria sumada de los 24 contenedores: ? MiB
+  $ free -m
+    total        used        free      shared  buff/cache   available
+    Mem:            7785        1348        3799           8        2838        6436
+
+========================================================================
+[C-06] LIBERACION DE RECURSOS
+========================================================================
+  $ POST /api/instance/stop/ x 30 en paralelo
+    Instancias detenidas: 24 / 30
+    Tiempo total: 14.82 s
+    Latencia por destruccion -> media 11.83 s | max 14.72 s
+    Filas en base de datos tras la limpieza: 0
+    Contenedores restantes: 0
+    Redes ctf-net-* restantes: 1
+    Hilos del servidor tras cerrar todo: 19 (en reposo eran 5)
+
+========================================================================
+RESUMEN DE LA PRUEBA DE CARGA
+========================================================================
+  Estudiantes simulados                      30
+  Sesiones iniciadas                         30 / 30
+  Instancias desplegadas                     24 / 30
+  Tiempo de la oleada de despliegue          15.90 s
+  Latencia media por instancia               13.98 s
+  Consolas simultaneas funcionales           22 / 24
+  Hilos del servidor en reposo               5
+  Hilos con todas las consolas abiertas      19
+  Hilos consumidos por consola               0.58
+  Hilos bloqueados en E/S                    11
+  Instancias liberadas                       24 / 30
+  Residuos tras la limpieza                  0 filas / 0 contenedores
+
+  VEREDICTO: CON INCIDENCIAS

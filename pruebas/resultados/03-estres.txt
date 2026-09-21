@@ -1,0 +1,157 @@
+PRUEBAS DE ESTRES - PLATAFORMA CTF
+Fecha: 2026-09-20 20:15:03
+Host:  Linux 6.6.87.2-microsoft-standard-WSL2
+Docker: 28.5.1
+Imagen de prueba: ctf-base:latest
+
+========================================================================
+[E-01] BOMBA DE PROCESOS (fork bomb acotada a 200 procesos)
+========================================================================
+
+  --- ANTES · contenedor sin PidsLimit ---
+  $ docker run --rm ctf-base:latest python3 -c '<fork x200>'
+    procesos creados: 200
+
+  --- DESPUES · contenedor con --pids-limit=64 ---
+  $ docker run --rm --pids-limit=64 ctf-base:latest python3 -c '<fork x200>'
+    bloqueado por el kernel: [Errno 11] Resource temporarily unavailable
+    procesos creados: 62
+
+    COMPARATIVO  |  sin limite: 200 procesos  ->  con limite: 62 procesos
+  >> RESULTADO: OK - el kernel corta en el cupo; el host nunca ve los 200 procesos
+
+========================================================================
+[E-02] AGOTAMIENTO DE MEMORIA (pedir 400 MB)
+========================================================================
+
+  --- ANTES · contenedor sin limite de memoria ---
+  $ docker run --rm ctf-base:latest python3 -c '<pedir 400MB>'
+    400 MB asignados correctamente
+    codigo_salida=0
+
+  --- ACTUAL · configuracion vigente de la plataforma (--memory=256m) ---
+  $ docker run --rm --memory=256m ctf-base:latest python3 -c '<pedir 400MB>'
+    400 MB asignados correctamente
+    codigo_salida=0
+
+  --- PROPUESTO · declarando tambien el tope de swap (--memory-swap=256m) ---
+  $ docker run --rm --memory=256m --memory-swap=256m ctf-base:latest python3 -c '<pedir 400MB>'
+    codigo_salida=137
+
+  Swap del host:
+                   total        used        free      shared  buff/cache   available
+    Swap:           2048           2        2045
+
+    COMPARATIVO  |  sin limite: 400 MB  ->  actual: 400 MB (usa swap)  ->  con tope de swap: bloqueado
+
+    *** HALLAZGO ***
+    La plataforma declara Memory pero no MemorySwap (ctf/docker_client.py).
+    Docker concede entonces una cantidad de swap igual al limite de RAM, asi
+    que el techo real por contenedor es 512 MB, no 256 MB. El limite SI existe
+    y el kernel lo aplica -- se ve en la tercera corrida -- pero el numero
+    efectivo es el doble del documentado, y eso afecta el calculo de cuantos
+    contenedores caben por host.
+    Correccion sugerida: anadir "MemorySwap": mem_limit_bytes al HostConfig.
+  >> RESULTADO: OK - con el tope de swap declarado, el kernel corta la asignacion en seco
+
+========================================================================
+[E-03] SATURACION DE CPU (bucle infinito)
+========================================================================
+
+  --- ANTES · contenedor sin limite de CPU ---
+  $ docker run -d ctf-base:latest sh -c 'while true; do :; done' && docker stats
+        Uso de CPU medido: 100.45%
+
+  --- DESPUES · contenedor con --cpus=0.5 ---
+  $ docker run -d --cpus=0.5 ctf-base:latest sh -c 'while true; do :; done' && docker stats
+        Uso de CPU medido: 50.39%
+
+    COMPARATIVO  |  sin limite: 100.45%  ->  con limite: 50.39%  (techo teorico 50%)
+  >> RESULTADO: OK - el planificador del kernel limita el bucle a media CPU
+
+========================================================================
+[E-04] SALIDA A INTERNET DESDE EL RETO
+========================================================================
+
+  --- ANTES · red bridge normal (como la crearia Docker por defecto) ---
+  $ docker network create ctf-estres-abierta
+  $ docker run --rm --network ctf-estres-abierta ctf-base:latest python3 -c '<conectar a 1.1.1.1:53>'
+    CONECTADO a internet: ('1.1.1.1', 53)
+
+  --- DESPUES · red con Internal=true (la que usa la plataforma) ---
+  $ docker network create --internal ctf-estres-interna
+  $ docker run --rm --network ctf-estres-interna ctf-base:latest python3 -c '<conectar a 1.1.1.1:53>'
+    SIN SALIDA: OSError [Errno 101] Network unreachable
+
+    COMPARATIVO  |  red normal: sale a internet  ->  red interna: sin ruta de salida
+  >> RESULTADO: OK - el reto no puede usarse para atacar a terceros desde la red del campus
+
+========================================================================
+[E-05] UN ESTUDIANTE INTENTA ALCANZAR AL OTRO
+========================================================================
+  Alumno B expone un servicio en 172.22.0.2:8000
+
+  --- ANTES · ambos alumnos en la MISMA red ---
+  $ docker run --rm --network ctf-estres-abierta ctf-base:latest python3 -c '<conectar a IP del alumno B>'
+    ALCANZADO: el alumno B es visible desde aqui
+
+  --- DESPUES · cada alumno en su PROPIA red interna (modelo de la plataforma) ---
+  $ docker run --rm --network ctf-estres-red-b ctf-base:latest python3 -c '<conectar a IP del alumno B>'
+    INALCANZABLE: OSError [Errno 101] Network unreachable
+
+    COMPARATIVO  |  red compartida: alumno visible  ->  red por usuario: inalcanzable
+  >> RESULTADO: OK - un estudiante no puede espiar ni atacar el entorno de otro
+
+========================================================================
+[E-06] CAPACIDADES DEL KERNEL (privilegios de root dentro del reto)
+========================================================================
+
+  --- ANTES · contenedor con las capacidades por defecto de Docker ---
+  $ docker run --rm ctf-base:latest sh -c 'grep CapEff /proc/self/status; chown nobody /etc/hostname'
+    CapEff:	00000000a80425fb
+    CHOWN PERMITIDO (conserva CAP_CHOWN)
+
+  --- DESPUES · con --cap-drop=ALL --cap-add=SETUID,SETGID (la plataforma) ---
+  $ docker run --rm --cap-drop=ALL --cap-add=SETUID --cap-add=SETGID ctf-base:latest sh -c '...'
+    CapEff:	00000000000000c0
+    CHOWN DENEGADO (sin CAP_CHOWN)
+
+    COMPARATIVO  |  mapa de capacidades: 00000000a80425fb  ->  00000000000000c0
+    (14 capacidades activas por defecto, 2 tras el endurecimiento)
+  >> RESULTADO: OK - root dentro del reto pierde los privilegios que no necesita
+
+========================================================================
+[E-07] DESCRIPTORES DE ARCHIVO DISPONIBLES
+========================================================================
+
+  --- ANTES · sin ulimit declarado ---
+  $ docker run --rm ctf-base:latest sh -c 'ulimit -n'
+        limite de descriptores: 1048576
+
+  --- DESPUES · con --ulimit nofile=1024:2048 ---
+  $ docker run --rm --ulimit nofile=1024:2048 ctf-base:latest sh -c 'ulimit -n'
+        limite de descriptores: 1024
+
+    COMPARATIVO  |  sin declarar: 1048576  ->  acotado: 1024
+  >> RESULTADO: OK - un bucle que abre archivos ya no degrada al resto
+
+========================================================================
+[E-08] PERFIL COMPLETO DE LA PLATAFORMA (todos los limites juntos)
+========================================================================
+  $ docker run --rm --memory=256m --cpus=0.5 --pids-limit=64 --cap-drop=ALL --cap-add=SETUID --cap-add=SETGID --tmpfs /tmp:rw,noexec,nosuid,size=64m --ulimit nofile=1024:2048 --init ctf-base:latest sh -c '<inventario de limites>'
+    memoria max : 268435456
+    cpu max     : 50000 100000
+    pids max    : 64
+    descriptores: 1024
+    capacidades : 00000000000000c0
+    montaje tmp : tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,size=65536k 0 0
+  >> RESULTADO: OK - el perfil de la plataforma se aplica completo y verificable
+
+========================================================================
+RESUMEN DE PRUEBAS DE ESTRES
+========================================================================
+  Total: 8  |  Exitosas: 8  |  Fallidas: 0
+
+  Residuos en el host tras las pruebas:
+    contenedores ctf-estres-*: 0
+    redes ctf-estres-*:        0
